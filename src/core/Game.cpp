@@ -26,7 +26,7 @@ void Game::initialize()
     loadMaze();
 
     // Add a player
-    auto player = std::make_unique<Player>(400.f, 300.f, "Player1");
+    auto player = std::make_unique<Player>(300.f, 300.f, "Player1");
     players_.push_back(player.get());
     entities_.push_back(std::move(player));
 }

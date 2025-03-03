@@ -58,10 +58,11 @@ public:
     void activatePowerUp(float duration);
 
 private:
-    std::string name_;      ///< Player's name
-    int score_;             ///< Current score
-    bool isPoweredUp_;      ///< Power-up state
-    float powerUpTimeLeft_; ///< Remaining power-up time
+    std::string name_;         ///< Player's name
+    int score_;                ///< Current score
+    bool isPoweredUp_;         ///< Power-up state
+    float powerUpTimeLeft_;    ///< Remaining power-up time
+    bool isCollidingWithWall_; ///< Flag indicating wall collision
 };
 
 #endif // PACMAN_PLAYER_H
