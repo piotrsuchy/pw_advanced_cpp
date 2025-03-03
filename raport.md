@@ -32,6 +32,7 @@ Istnieją dwa tryby gry:
     - użytkownik otrzymuje punkty za zbieranie kulek (np. 10 pkt)
     - bonusowe punkty za power-pellets (wyróżniające się wyglądem), np. 50 pkt
     - tablica wyników dla wszystkich graczy
+    - koniec gry w przypadku kolizji z duchem
 3. "Power-upy"
     - czasowe wzmocnienia - "pożeranie" duchów + dodatkowe punkty podczas wzmocnienia
     - specjalne efekty wizualne
@@ -54,8 +55,28 @@ Główna logika gry będzie podzielona na (plan, który może się zmienić):
     - NetworkManager obsługujący komunikację
     - synchronizacja stanu gry między klientami, a serwerem
     - obsługa połączeń TCP
+    - implementacja protokołu komunikacyjnego opartego na pakietach
+    - system kolejkowania i buforowania wiadomości
 
-3. Warstwa graficzna
+3. Szczegóły komunikacji sieciowej:
+
+    - Serwer nasłuchuje na określonym porcie
+    - Klienci łączą się z serwerem poprzez adres IP i port
+    - Komunikacja oparta na pakietach zawierających:
+        - pozycję graczy (x, y)
+        - aktualny stan punktacji
+        - informacje o zebranych power-upach
+        - stan aktywnych pelletów na planszy
+    - Synchronizacja stanu gry:
+        - częstotliwość aktualizacji: np. 60 razy na sekundę
+        - interpolacja pozycji graczy dla płynności ruchu
+        - system kompensacji opóźnień sieciowych
+    - Obsługa rozłączeń:
+        - wykrywanie utraty połączenia
+        - możliwość ponownego połączenia
+        - zachowanie stanu gry podczas krótkich przerw w połączeniu
+
+4. Warstwa graficzna
 
     - interfejs graficzny (SFML)
     - renderowanie objektów gry
