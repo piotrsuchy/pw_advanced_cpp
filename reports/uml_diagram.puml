@@ -1,29 +1,20 @@
 @startuml
 
 ' ==========================
-'  Classes & Relationships
+'  Klasy i relacje
 ' ==========================
 
-' Game / Scene / Maze
+' Główna klasa gry, która zarządza rozgrywką
 class Game {
     + run()
     + processEvents()
     + update(deltaTime : float)
     + render()
     --
-    - sceneManager : SceneManager
-    - resourceManager : ResourceManager
+    - scene : InGameScene
 }
 
-' sf - Simple and Fast Multimedia Library
-class Scene {
-    + handleEvent(event : sf::Event)
-    + update(deltaTime : float)
-    + render(window : sf::RenderWindow)
-    --
-    <<abstract>>
-}
-
+' Klasa reprezentująca tryb rozgrywki
 class InGameScene {
     + handleEvent(event : sf::Event)
     + update(deltaTime : float)
@@ -36,6 +27,7 @@ class InGameScene {
     - networkManager : NetworkManager
 }
 
+' Klasa reprezentująca planszę gry
 class Maze {
     + isWall(tileX : int, tileY : int) : bool
     + hasPellet(tileX : int, tileY : int) : bool
@@ -44,13 +36,12 @@ class Maze {
     + tileToWorld(tileX : int, tileY : int) : sf::Vector2f
     + worldToTile(x : float, y : float) : sf::Vector2i
     --
-    - tiles : 2D array / vector<vector<int>>
+    - tiles : vector<vector<int>>
     - TILE_SIZE : float
 }
 
-
-' Entities
-class Entity {
+' Klasa bazowa dla obiektów dynamicznych
+abstract class Entity {
     + update(deltaTime : float)
     + render(window : sf::RenderWindow)
     + onCollision(other : Entity)
@@ -60,10 +51,9 @@ class Entity {
     --
     # position_ : sf::Vector2f
     # velocity_ : sf::Vector2f
-    --
-    <<abstract>>
 }
 
+' Gracz (Pac-Man)
 class Player {
     + Player(startPos : sf::Vector2f)
     + update(deltaTime : float)
@@ -77,6 +67,7 @@ class Player {
     - powerUpTimer_ : float
 }
 
+' Duch (przeciwnik)
 class Ghost {
     + Ghost(startPos : sf::Vector2f)
     + update(deltaTime : float)
@@ -88,6 +79,7 @@ class Ghost {
     - frightenedTimer_ : float
 }
 
+' Pellet (kuleczka do zebrania)
 class Pellet {
     + Pellet(pos : sf::Vector2f, isPower : bool)
     + update(deltaTime : float)
@@ -98,7 +90,7 @@ class Pellet {
     - isPowerPellet_ : bool
 }
 
-' NETWORK MANAGER
+' Klasa odpowiedzialna za synchronizację stanu gry (tryb wieloosobowy)
 class NetworkManager {
     + initializeServer(port : unsigned short) : bool
     + initializeClient(address : string, port : unsigned short) : bool
@@ -113,24 +105,16 @@ class NetworkManager {
 }
 
 ' ==========================
-'  Inheritance & Associations
+'  Dziedziczenie i relacje
 ' ==========================
 
-' Scenes
-Scene <|-- InGameScene
-
-' Entities
 Entity <|-- Player
 Entity <|-- Ghost
 Entity <|-- Pellet
 
-' Maze usage
 InGameScene -> Maze : uses
-
-' InGameScene references network manager
 InGameScene -> NetworkManager : uses
 
-' example: the Game might hold a "current Scene", or manage multiple Scenes
-Game -> "1..*" Scene : manages
+Game -> InGameScene : manages
 
 @enduml
