@@ -1,4 +1,4 @@
-#include "GameController.hpp"
+#include "core/GameController.hpp"
 
 GameController::GameController()
     : window(sf::VideoMode(800, 600), "Pac-Man Clone") {
