@@ -1,4 +1,12 @@
-@startuml GameLoop
+@startuml GameLoopExtended
+
+enum Direction {
+    None
+    Up
+    Down
+    Left
+    Right
+}
 
 class GameController {
     +run()
@@ -8,24 +16,11 @@ class GameController {
 }
 
 class InputManager {
-    +pollInputs()
-}
-
-class Maze
-class Entity
-class PacMan
-class Ghost
-PacMan --|> Entity
-Ghost --|> Entity
-
-class Renderer {
-    +draw(Entity)
-    +draw(Maze)
+    +pollInputs(window)
+    +getDirection()
 }
 
 GameController --> InputManager
-GameController --> Maze
-GameController --> Entity
-GameController --> Renderer
+InputManager --> Direction
 
 @enduml

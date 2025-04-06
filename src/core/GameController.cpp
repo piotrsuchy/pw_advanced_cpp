@@ -28,7 +28,22 @@ void GameController::processEvents() {
 }
 
 void GameController::update(float deltaTime) {
-    // Placeholder: Nothing to update yet
+    inputManager.pollInputs(window);
+
+    Direction dir = inputManager.getDirection();
+    if (dir != Direction::None) {
+        // Temporary test behavior
+        sf::Vector2f movement(0.f, 0.f);
+        switch (dir) {
+            case Direction::Up: movement.y -= 100 * deltaTime; break;
+            case Direction::Down: movement.y += 100 * deltaTime; break;
+            case Direction::Left: movement.x -= 100 * deltaTime; break;
+            case Direction::Right: movement.x += 100 * deltaTime; break;
+            default: break;
+        }
+        testShape.move(movement);
+    }
+
 }
 
 void GameController::render() {
