@@ -1,0 +1,31 @@
+@startuml GameLoop
+
+class GameController {
+    +run()
+    -processEvents()
+    -update(deltaTime)
+    -render()
+}
+
+class InputManager {
+    +pollInputs()
+}
+
+class Maze
+class Entity
+class PacMan
+class Ghost
+PacMan --|> Entity
+Ghost --|> Entity
+
+class Renderer {
+    +draw(Entity)
+    +draw(Maze)
+}
+
+GameController --> InputManager
+GameController --> Maze
+GameController --> Entity
+GameController --> Renderer
+
+@enduml
