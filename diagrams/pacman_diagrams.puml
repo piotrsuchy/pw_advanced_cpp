@@ -1,0 +1,26 @@
+@startuml GameLoopExtended
+
+enum Direction {
+    None
+    Up
+    Down
+    Left
+    Right
+}
+
+class GameController {
+    +run()
+    -processEvents()
+    -update(deltaTime)
+    -render()
+}
+
+class InputManager {
+    +pollInputs(window)
+    +getDirection()
+}
+
+GameController --> InputManager
+InputManager --> Direction
+
+@enduml
