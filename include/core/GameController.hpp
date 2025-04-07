@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "core/InputManager.hpp"
+#include "core/PacMan.hpp"
 
 class GameController {
 public:
@@ -14,7 +15,8 @@ private:
 
     sf::RenderWindow window;
     sf::Clock clock;
-    sf::RectangleShape testShape; // Placeholder for any entity
+    // sf::RectangleShape testShape; // Placeholder
+    PacMan pacman;
 
     InputManager inputManager;
 };
