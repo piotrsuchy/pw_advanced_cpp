@@ -3,6 +3,7 @@
 GameController::GameController()
     : window(sf::VideoMode(800, 600), "Pac-Man Clone") {
     window.setFramerateLimit(60);
+    level.loadLevel(1);
 }
 
 void GameController::run() {
@@ -33,6 +34,7 @@ void GameController::update(float deltaTime) {
 void GameController::render() {
     window.clear(sf::Color::Black);
     // window.draw(testShape); // draw placeholder
+    level.draw(window);
     pacman.draw(window); // draw placeholder
     window.display();
 }

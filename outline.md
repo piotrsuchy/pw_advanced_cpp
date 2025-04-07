@@ -4,24 +4,24 @@
 
 ### Decide on Game Framework / Library
 
-- Select environment: Unity, Unreal, SDL, SFML, OpenGL, etc.
-- Configure development tools (IDE, build system).
+- Select environment: Unity, Unreal, SDL, SFML, OpenGL, etc. 🟩
+- Configure development tools (IDE, build system). 🟩
 
 ### Create Basic Project Structure
 
 Organize folders/modules for:
 
-- Core game loop / engine code
-- Assets (images, sounds)
-- Scripts or code for entities (Pac-Man, ghosts)
-- UI and menus (if applicable)
+- Core game loop / engine code 🟩
+- Assets (images, sounds) 🟧
+- Scripts or code for entities (Pac-Man, ghosts) $TODO
+- UI and menus (if applicable) $TODO
 
 ### Implement a Game Loop
 
 Tasks:
 
-- Create `GameController` (or main loop class) with `update(float deltaTime)` and `render()` methods.
-- Clear the screen, draw something basic (e.g., background or placeholder sprite), and present the frame each cycle.
+- Create `GameController` (or main loop class) with `update(float deltaTime)` and `render()` methods. 🟩
+- Clear the screen, draw something basic (e.g., background or placeholder sprite), and present the frame each cycle. 🟩
 
 ---
 
@@ -31,16 +31,16 @@ Tasks:
 
 Tasks:
 
-- Detect keyboard/joystick events.
-- Provide method like `getDirection()` to query direction input.
-- Test by logging inputs (up, down, left, right).
+- Detect keyboard/joystick events. 🟩
+- Provide method like `getDirection()` to query direction input. 🟩
+- Test by logging inputs (up, down, left, right). 🟩
 
 ### Hook Input to `GameController`
 
 Tasks:
 
-- Call `InputManager.pollInputs()` during the update phase.
-- Pass direction commands to a test sprite or player object.
+- Call `InputManager.pollInputs()` during the update phase. 🟩
+- Pass direction commands to a test sprite or player object. 🟩
 
 ---
 

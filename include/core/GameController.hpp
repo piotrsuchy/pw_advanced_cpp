@@ -2,6 +2,9 @@
 #include <SFML/Graphics.hpp>
 #include "core/InputManager.hpp"
 #include "core/PacMan.hpp"
+#include "core/LevelManager.hpp"
+
+LevelManager level;
 
 class GameController {
 public:
