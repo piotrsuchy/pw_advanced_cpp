@@ -3,8 +3,7 @@
 #include "core/InputManager.hpp"
 #include "core/PacMan.hpp"
 #include "core/LevelManager.hpp"
-
-LevelManager level;
+#include "graphics/LevelRenderer.hpp"
 
 class GameController {
 public:
@@ -22,4 +21,7 @@ private:
     PacMan pacman;
 
     InputManager inputManager;
+
+    LevelManager level;
+    LevelRenderer levelRenderer;
 };
