@@ -33,8 +33,7 @@ void GameController::update(float deltaTime) {
 
 void GameController::render() {
     window.clear(sf::Color::Black);
-    // window.draw(testShape); // draw placeholder
-    levelRenderer.draw(window, level);
-    pacman.draw(window); // draw placeholder
+    levelRenderer.draw(window, level); // use renderer, not LevelManager
+    pacman.draw(window);
     window.display();
 }
