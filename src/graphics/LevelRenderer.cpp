@@ -1,25 +1,28 @@
+#include <iostream>
 #include "graphics/LevelRenderer.hpp"
 
 LevelRenderer::LevelRenderer() {
-    // Load textures from the existing pacman.png
-    wallTexture.loadFromFile("assets/textures/pacman.png");
-    pelletTexture.loadFromFile("assets/textures/pacman.png");
-    powerPelletTexture.loadFromFile("assets/textures/pacman.png");
+    // Load textures
+    if (!wallTexture.loadFromFile("assets/textures/wall.png"))
+        std::cerr << "Failed to load wall.png\n";
+    if (!pelletTexture.loadFromFile("assets/textures/dot.png"))
+        std::cerr << "Failed to load dot.png\n";
+    if (!powerPelletTexture.loadFromFile("assets/textures/cherry.png"))
+        std::cerr << "Failed to load cherry.png\n";
 
     wallSprite.setTexture(wallTexture);
     pelletSprite.setTexture(pelletTexture);
     powerPelletSprite.setTexture(powerPelletTexture);
 
-    // Set texture rectangles for each sprite type
-    wallSprite.setTextureRect({0, 0, 32, 32});
-    pelletSprite.setTextureRect({32, 0, 32, 32});
-    powerPelletSprite.setTextureRect({64, 0, 32, 32});
+    // No cropping needed — just scale from 64x64 → tileSize
+    auto scaleFrom64 = [this](sf::Sprite& s) {
+        s.setScale(static_cast<float>(tileSize) / 64.f,
+                   static_cast<float>(tileSize) / 64.f);
+    };
 
-    // Scale sprites to match tile size
-    float scale = static_cast<float>(tileSize) / 32.0f;
-    wallSprite.setScale(scale, scale);
-    pelletSprite.setScale(scale, scale);
-    powerPelletSprite.setScale(scale, scale);
+    scaleFrom64(wallSprite);
+    scaleFrom64(pelletSprite);
+    scaleFrom64(powerPelletSprite);
 }
 
 void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {

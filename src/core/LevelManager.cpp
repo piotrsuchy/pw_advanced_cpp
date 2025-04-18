@@ -1,19 +1,24 @@
 #include "core/LevelManager.hpp"
+#include "core/ClassicMaze.hpp"
 
-#include "core/LevelManager.hpp"
-
-void LevelManager::loadLevel(int) {
-    grid = {
-        {TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall},
-        {TileType::Wall, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Wall},
-        {TileType::Wall, TileType::Pellet, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Pellet, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Pellet, TileType::Wall},
-        {TileType::Wall, TileType::Pellet, TileType::Wall, TileType::Empty, TileType::Wall, TileType::Pellet, TileType::Wall, TileType::Empty, TileType::Empty, TileType::Wall, TileType::Pellet, TileType::Wall},
-        {TileType::Wall, TileType::Pellet, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Pellet, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Pellet, TileType::Wall},
-        {TileType::Wall, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::Pellet, TileType::PowerPellet, TileType::Wall},
-        {TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall, TileType::Wall}
-    };
+void LevelManager::loadLevel(int lvl) {
+    {
+        (void)lvl;
+        loadFromInts(CLASSIC_MAZE);
+    }
 }
 
+// LevelManager.cpp
+void LevelManager::loadFromInts(const std::vector<std::vector<int>>& intGrid)
+{
+    grid.resize(intGrid.size());
+    for (std::size_t y = 0; y < intGrid.size(); ++y) {
+        grid[y].resize(intGrid[y].size());
+        for (std::size_t x = 0; x < intGrid[y].size(); ++x) {
+            grid[y][x] = fromInt(intGrid[y][x]);
+        }
+    }
+}
 
 bool LevelManager::collectPellet(int x, int y) {
     if (grid[y][x] == TileType::Pellet || grid[y][x] == TileType::PowerPellet) {
