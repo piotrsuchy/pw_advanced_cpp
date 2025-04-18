@@ -4,6 +4,18 @@ GameController::GameController()
     : window(sf::VideoMode(800, 600), "Pac-Man Clone") {
     window.setFramerateLimit(60);
     level.loadLevel(1);
+
+    // Calculate the center position for Pac-Man
+    float offsetX = (window.getSize().x - level.getWidth() * 20.f) / 2.0f;
+    float offsetY = (window.getSize().y - level.getHeight() * 20.f) / 2.0f;
+    
+    // Position Pac-Man in the center of the first row where there's a pellet
+    for (int x = 0; x < level.getWidth(); ++x) {
+        if (level.getTile(x, 1) == TileType::Pellet) {
+            pacman.setPosition(offsetX + x * 20.f + 10.f, offsetY + 20.f + 10.f);
+            break;
+        }
+    }
 }
 
 void GameController::run() {
@@ -28,13 +40,12 @@ void GameController::update(float deltaTime) {
 
     Direction dir = inputManager.getDirection();
     pacman.handleInput(dir);
-    pacman.update(deltaTime);
+    pacman.update(deltaTime, level);
 }
 
 void GameController::render() {
     window.clear(sf::Color::Black);
-    // window.draw(testShape); // draw placeholder
-    level.draw(window);
-    pacman.draw(window); // draw placeholder
+    levelRenderer.draw(window, level); // use renderer, not LevelManager
+    pacman.draw(window);
     window.display();
 }

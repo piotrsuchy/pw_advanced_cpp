@@ -12,6 +12,7 @@ find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
 # Source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     src/core/*.cpp
+    src/graphics/*.cpp
     main.cpp
 )
 
