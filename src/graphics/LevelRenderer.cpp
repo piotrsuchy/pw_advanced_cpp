@@ -4,9 +4,9 @@
 LevelRenderer::LevelRenderer()
 {
     // Load textures
-    if (!wallTexture.loadFromFile("assets/textures/block1.png"))
+    if (!wallTexture.loadFromFile("assets/textures/block2.png"))
     {
-        std::cerr << "Failed to load block1.png\n";
+        std::cerr << "Failed to load block2.png\n";
     }
     else
     {
@@ -117,7 +117,7 @@ void LevelRenderer::draw(sf::RenderWindow &window, const LevelManager &level)
     // Draw background
     sf::RectangleShape background(sf::Vector2f(totalWidth, totalHeight));
     background.setPosition(offsetX, offsetY);
-    background.setFillColor(sf::Color(50, 50, 50)); // Dark gray
+    background.setFillColor(sf::Color::Black); // Dark gray
     window.draw(background);
 
     // Draw grid cells with different colors for debugging
@@ -130,27 +130,11 @@ void LevelRenderer::draw(sf::RenderWindow &window, const LevelManager &level)
 
             // Debug rectangle to show tile boundaries
             sf::RectangleShape tileRect(sf::Vector2f(scaledTileSize, scaledTileSize));
-            tileRect.setPosition(offsetX + x * scaledTileSize, offsetY + y * scaledTileSize);
-            tileRect.setOutlineColor(sf::Color::White);
-            tileRect.setOutlineThickness(1);
+            // tileRect.setPosition(offsetX + x * scaledTileSize, offsetY + y * scaledTileSize);
+            // tileRect.setOutlineColor(sf::Color::White);
+            // tileRect.setOutlineThickness(1);
 
-            // Color based on tile type
-            switch (tileType)
-            {
-            case TileType::Wall:
-                tileRect.setFillColor(sf::Color::Blue);
-                break;
-            case TileType::Pellet:
-                tileRect.setFillColor(sf::Color::Green);
-                break;
-            case TileType::PowerPellet:
-                tileRect.setFillColor(sf::Color::Red);
-                break;
-            default:
-                tileRect.setFillColor(sf::Color::Black);
-                break;
-            }
-
+            tileRect.setFillColor(sf::Color::Black);
             window.draw(tileRect);
 
             // Try to draw sprites
