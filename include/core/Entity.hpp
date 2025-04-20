@@ -24,5 +24,5 @@ protected:
     sf::Sprite sprite;
     sf::Vector2f position;
     Direction direction = Direction::None;
-    float speed = 64.f * 3;
+    float speed = 64.f * 9;
 };

@@ -12,7 +12,7 @@
 Organize folders/modules for:
 
 - Core game loop / engine code 🟩
-- Assets (images, sounds) 🟧
+- Assets (images, sounds) 🟧 (TODO: SOUNDS)
 - Scripts or code for entities (Pac-Man, ghosts) $TODO
 - UI and menus (if applicable) $TODO
 
@@ -50,8 +50,8 @@ Tasks:
 
 Tasks:
 
-- Use a 2D array or tile-based system.
-- Store data: walls, paths, pellets.
+- Use a 2D array or tile-based system. 🟩
+- Store data: walls, paths, pellets. 🟩
 - Provide collision checks like `isWall(TilePosition pos)`.
 
 ### Load or Hardcode a Level
