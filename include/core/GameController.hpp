@@ -5,7 +5,8 @@
 #include "core/LevelManager.hpp"
 #include "graphics/LevelRenderer.hpp"
 
-class GameController {
+class GameController
+{
 public:
     GameController();
     void run();
@@ -24,4 +25,5 @@ private:
 
     LevelManager level;
     LevelRenderer levelRenderer;
+    float scaledTileSize = 0.0f; // Store the scaled tile size
 };

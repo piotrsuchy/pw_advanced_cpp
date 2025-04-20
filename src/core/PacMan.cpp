@@ -1,51 +1,75 @@
 #include "core/PacMan.hpp"
 #include "core/LevelManager.hpp"
+#include "graphics/LevelRenderer.hpp" // For tileSize
 
-PacMan::PacMan() {
-    if (!texture.loadFromFile("assets/textures/pacman.png")) {
-        sprite.setTextureRect(sf::IntRect(0, 0, 32, 32)); // fallback rectangle
-    } else {
+PacMan::PacMan()
+{
+    if (!texture.loadFromFile("assets/textures/pacman.png"))
+    {
+        sprite.setTextureRect(sf::IntRect(0, 0, 64, 64)); // fallback rectangle
+    }
+    else
+    {
         sprite.setTexture(texture);
-        sprite.setTextureRect(sf::IntRect(0, 0, 32, 32));
+        sprite.setTextureRect(sf::IntRect(0, 0, 64, 64));
     }
 
     sprite.setColor(sf::Color::Yellow);
-    sprite.setOrigin(16.f, 16.f);  // Center of 32x32 sprite
+    sprite.setOrigin(32.f, 32.f); // Center of 64x64 sprite
 
-    // Scale sprite to match tile size
-    float scale = 20.0f / 32.0f;  // tileSize / textureSize
-    sprite.setScale(scale, scale);
+    // Scale sprite to match tile size (64x64)
+    sprite.setScale(1.0f, 1.0f); // Will be adjusted in draw method
 
     // Start position will be set by GameController
     position = sf::Vector2f(400.f, 300.f);
     sprite.setPosition(position);
 }
 
-void PacMan::handleInput(Direction dir) {
+void PacMan::handleInput(Direction dir)
+{
     direction = dir;
 }
 
-void PacMan::update(float deltaTime, LevelManager& level) {
+void PacMan::update(float deltaTime, LevelManager &level, float scaledTileSize, float scale)
+{
     sf::Vector2f movement(0.f, 0.f);
     sf::Vector2f nextPosition = position;
 
-    switch (direction) {
-        case Direction::Up: nextPosition.y -= speed * deltaTime; break;
-        case Direction::Down: nextPosition.y += speed * deltaTime; break;
-        case Direction::Left: nextPosition.x -= speed * deltaTime; break;
-        case Direction::Right: nextPosition.x += speed * deltaTime; break;
-        default: break;
+    // Apply scaling to the sprite
+    sprite.setScale(scale, scale);
+
+    // Adjust speed based on scale
+    float adjustedSpeed = speed * scale;
+
+    switch (direction)
+    {
+    case Direction::Up:
+        nextPosition.y -= adjustedSpeed * deltaTime;
+        break;
+    case Direction::Down:
+        nextPosition.y += adjustedSpeed * deltaTime;
+        break;
+    case Direction::Left:
+        nextPosition.x -= adjustedSpeed * deltaTime;
+        break;
+    case Direction::Right:
+        nextPosition.x += adjustedSpeed * deltaTime;
+        break;
+    default:
+        break;
     }
 
     // Convert screen coordinates to grid coordinates
-    float offsetX = (800.f - level.getWidth() * 20.f) / 2.0f;  // window width - maze width
-    float offsetY = (600.f - level.getHeight() * 20.f) / 2.0f;  // window height - maze height
+    float offsetX = (800.f - level.getWidth() * scaledTileSize) / 2.0f;
+    float offsetY = (600.f - level.getHeight() * scaledTileSize) / 2.0f;
 
-    int tileX = static_cast<int>((nextPosition.x - offsetX) / 20.f);
-    int tileY = static_cast<int>((nextPosition.y - offsetY) / 20.f);
+    int tileX = static_cast<int>((nextPosition.x - offsetX) / scaledTileSize);
+    int tileY = static_cast<int>((nextPosition.y - offsetY) / scaledTileSize);
 
-    if (tileX >= 0 && tileY >= 0 && tileX < level.getWidth() && tileY < level.getHeight()) {
-        if (level.getTile(tileX, tileY) != TileType::Wall) {
+    if (tileX >= 0 && tileY >= 0 && tileX < level.getWidth() && tileY < level.getHeight())
+    {
+        if (level.getTile(tileX, tileY) != TileType::Wall)
+        {
             position = nextPosition;
             sprite.setPosition(position);
             level.collectPellet(tileX, tileY);
@@ -53,6 +77,7 @@ void PacMan::update(float deltaTime, LevelManager& level) {
     }
 }
 
-void PacMan::draw(sf::RenderWindow& window) {
+void PacMan::draw(sf::RenderWindow &window)
+{
     window.draw(sprite);
 }
