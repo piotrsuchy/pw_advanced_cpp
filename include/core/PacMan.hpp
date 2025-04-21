@@ -12,5 +12,10 @@ public:
     void draw(sf::RenderWindow &window) override;
 
 private:
+    sf::Vector2f position{400.f, 350.f};
+    Direction direction{Direction::None};
+    float speed{576.f}; // 9 * 64.f
+
     sf::Texture texture;
+    sf::Sprite sprite;
 };

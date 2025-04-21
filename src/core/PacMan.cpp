@@ -2,37 +2,13 @@
 #include "core/LevelManager.hpp"
 #include "graphics/LevelRenderer.hpp" // For tileSize
 
-PacMan::PacMan()
-{
-    if (!texture.loadFromFile("assets/textures/pacman.png"))
-    {
-        sprite.setTextureRect(sf::IntRect(0, 0, 64, 64)); // fallback rectangle
-    }
-    else
-    {
-        sprite.setTexture(texture);
-        sprite.setTextureRect(sf::IntRect(0, 0, 64, 64));
-    }
-
-    sprite.setColor(sf::Color::Yellow);
-    sprite.setOrigin(32.f, 32.f); // Center of 64x64 sprite
-
-    // Scale sprite to match tile size (64x64)
-    sprite.setScale(1.0f, 1.0f); // Will be adjusted in draw method
-
-    // Start position will be set by GameController
-    position = sf::Vector2f(400.f, 300.f);
-    sprite.setPosition(position);
-}
-
 void PacMan::handleInput(Direction dir)
 {
     direction = dir;
 }
 
-void PacMan::update(float deltaTime, LevelManager &level, float scaledTileSize, float scale)
+void PacMan::update(float dt, LevelManager &level, float scaledTileSize, float scale)
 {
-    sf::Vector2f movement(0.f, 0.f);
     sf::Vector2f nextPosition = position;
 
     // Apply scaling to the sprite
@@ -44,16 +20,16 @@ void PacMan::update(float deltaTime, LevelManager &level, float scaledTileSize, 
     switch (direction)
     {
     case Direction::Up:
-        nextPosition.y -= adjustedSpeed * deltaTime;
+        nextPosition.y -= adjustedSpeed * dt;
         break;
     case Direction::Down:
-        nextPosition.y += adjustedSpeed * deltaTime;
+        nextPosition.y += adjustedSpeed * dt;
         break;
     case Direction::Left:
-        nextPosition.x -= adjustedSpeed * deltaTime;
+        nextPosition.x -= adjustedSpeed * dt;
         break;
     case Direction::Right:
-        nextPosition.x += adjustedSpeed * deltaTime;
+        nextPosition.x += adjustedSpeed * dt;
         break;
     default:
         break;
@@ -75,9 +51,4 @@ void PacMan::update(float deltaTime, LevelManager &level, float scaledTileSize, 
             level.collectPellet(tileX, tileY);
         }
     }
-}
-
-void PacMan::draw(sf::RenderWindow &window)
-{
-    window.draw(sprite);
 }

@@ -12,9 +12,9 @@
 Organize folders/modules for:
 
 - Core game loop / engine code 🟩
-- Assets (images, sounds) 🟧 (TODO: SOUNDS)
-- Scripts or code for entities (Pac-Man, ghosts) $TODO
-- UI and menus (if applicable) $TODO
+- Assets (images, sounds) 🟧 $TODO
+- Scripts or code for entities (Pac-Man, ghosts) 🟧 $TODO
+- UI and menus (if applicable) 🟧 $TODO
 
 ### Implement a Game Loop
 
@@ -52,23 +52,23 @@ Tasks:
 
 - Use a 2D array or tile-based system. 🟩
 - Store data: walls, paths, pellets. 🟩
-- Provide collision checks like `isWall(TilePosition pos)`.
+- Provide collision checks like `isWall(TilePosition pos)`. 🟩
 
 ### Load or Hardcode a Level
 
 Tasks:
 
-- Use a text/JSON file or hardcoded 2D array (e.g., 28×31 grid).
-- Implement `loadLevel(int levelNumber)` in `LevelManager`.
-- Render maze (walls, floor).
+- Use a text/JSON file or hardcoded 2D array (e.g., 28×31 grid). 🟩
+- Implement `loadLevel(int levelNumber)` in `LevelManager`. 🟩
+- Render maze (walls, floor). 🟩
 
 ### Place Pellets and Power Pellets
 
 Tasks:
 
-- Mark tiles for pellets / power pellets.
-- Render them with sprites (small/large dots).
-- Implement `collectPellet(TilePosition pos)`.
+- Mark tiles for pellets / power pellets. 🟩
+- Render them with sprites (small/large dots). 🟩
+- Implement `collectPellet(TilePosition pos)`. 🟩
 
 ---
 
