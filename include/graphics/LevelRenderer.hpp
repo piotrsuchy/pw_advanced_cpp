@@ -6,8 +6,6 @@ class LevelRenderer
 {
 public:
     LevelRenderer();
-    static constexpr int tileSize = 64; // Standardize to 64x64
-
     void draw(sf::RenderWindow &window, const LevelManager &level);
 
 private:

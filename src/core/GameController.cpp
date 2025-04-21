@@ -1,5 +1,5 @@
 #include "core/GameController.hpp"
-#include "graphics/LevelRenderer.hpp" // For tileSize
+#include "graphics/Constants.hpp"
 
 GameController::GameController()
     : window(sf::VideoMode(800, 600), "Pac-Man Clone")
@@ -23,14 +23,14 @@ void GameController::run()
         if (firstFrame)
         {
             // Size the maze to fit in the window
-            int totalWidth = level.getWidth() * LevelRenderer::tileSize;
-            int totalHeight = level.getHeight() * LevelRenderer::tileSize;
+            int totalWidth = level.getWidth() * tileSize;
+            int totalHeight = level.getHeight() * tileSize;
 
             float scaleX = static_cast<float>(window.getSize().x) / totalWidth;
             float scaleY = static_cast<float>(window.getSize().y) / totalHeight;
-            float scale = std::min(scaleX, scaleY) * 0.9f; // Same scale as in LevelRenderer
+            float scale = std::min(scaleX, scaleY) * 0.9f;
 
-            scaledTileSize = LevelRenderer::tileSize * scale;
+            scaledTileSize = tileSize * scale;
 
             // Get offsets for centering
             float offsetX = (window.getSize().x - level.getWidth() * scaledTileSize) / 2.0f;
@@ -73,8 +73,8 @@ void GameController::update(float deltaTime)
     pacman.handleInput(dir);
 
     // Update pacman with the scaled tile size
-    int totalWidth = level.getWidth() * LevelRenderer::tileSize;
-    int totalHeight = level.getHeight() * LevelRenderer::tileSize;
+    int totalWidth = level.getWidth() * tileSize;
+    int totalHeight = level.getHeight() * tileSize;
 
     float scaleX = static_cast<float>(window.getSize().x) / totalWidth;
     float scaleY = static_cast<float>(window.getSize().y) / totalHeight;

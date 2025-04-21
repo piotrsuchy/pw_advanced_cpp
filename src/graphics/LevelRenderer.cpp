@@ -1,5 +1,6 @@
 #include <iostream>
 #include "graphics/LevelRenderer.hpp"
+#include "graphics/Constants.hpp"
 
 LevelRenderer::LevelRenderer()
 {

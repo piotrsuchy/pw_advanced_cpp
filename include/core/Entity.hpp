@@ -10,7 +10,7 @@ class Entity
 public:
     virtual ~Entity() = default;
 
-    virtual void update(float deltaTime, LevelManager &level, float scaledTileSize, float scale) = 0;
+    virtual void update(float deltaTime) {};
     virtual void draw(sf::RenderWindow &window) = 0;
 
     void setPosition(float x, float y)
