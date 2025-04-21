@@ -1,5 +1,8 @@
 #include "core/GameController.hpp"
 #include "graphics/Constants.hpp"
+#include "core/PacMan.hpp"
+#include "core/DebugUtils.hpp"
+#include <iostream>
 
 GameController::GameController()
     : window(sf::VideoMode(800, 600), "Pac-Man Clone")
@@ -17,6 +20,8 @@ void GameController::run()
 
     while (window.isOpen())
     {
+        std::cout << "DEBUG: Position: " << pacman.getPosition() << "\n";
+        std::cout << "DEBUG: Direction: " << pacman.getDirection() << "\n";
         float deltaTime = clock.restart().asSeconds();
         processEvents();
 
@@ -60,18 +65,21 @@ void GameController::processEvents()
     sf::Event event;
     while (window.pollEvent(event))
     {
-        if (event.type == sf::Event::Closed)
+        if (event.type == sf::Event::Closed) {
             window.close();
+        }
+
+        // forward everything else to the input system
+        inputManager.handleEvent(event);
+
     }
 }
 
 void GameController::update(float deltaTime)
 {
-    inputManager.pollInputs(window);
-
-    Direction dir = inputManager.getDirection();
-    pacman.handleInput(dir);
-
+    // at most one key press per frame
+    if (Direction d = inputManager.popQueuedDirection(); d != Direction::None)
+        pacman.handleInput(d);
     // Update pacman with the scaled tile size
     int totalWidth = level.getWidth() * tileSize;
     int totalHeight = level.getHeight() * tileSize;

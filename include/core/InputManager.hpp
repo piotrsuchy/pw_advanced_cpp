@@ -6,9 +6,11 @@ enum class Direction { None, Up, Down, Left, Right };
 
 class InputManager {
 public: 
-    void pollInputs(sf::RenderWindow& window);
-    Direction getDirection() const;
+    // call once for every SFML event
+    void handleEvent(const sf::Event& e);
 
+    // returns the next queued direction and clears the queue
+    Direction popQueuedDirection();
 private:
-    Direction currentDirection = Direction::None;
+    Direction queuedDir = Direction::None; // one-shot buffer
 };
