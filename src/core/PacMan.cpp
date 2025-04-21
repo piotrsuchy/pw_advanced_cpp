@@ -17,7 +17,12 @@ void PacMan::update(float dt, LevelManager& level,
     float offX = (800.f - level.getWidth()  * scaledTileSize) / 2.f;
     float offY = (600.f - level.getHeight() * scaledTileSize) / 2.f;
 
-    // try to honour the queued turn when we’re exactly on a tile centre
+    // 0) if we are not moving, try to start moving straight away
+    if (direction == Direction::None && canMove(desiredDirection, level, scaledTileSize, offX, offY)) {
+        direction = desiredDirection;
+    }
+
+    // 1) normal queued-turn logic (needs alignment)
     if (aligned(scaledTileSize, offX, offY) &&
         canMove(desiredDirection, level, scaledTileSize, offX, offY)) {
         direction = desiredDirection;
@@ -45,7 +50,7 @@ void PacMan::update(float dt, LevelManager& level,
     // if wall in front - stop and snap to centre else move forward
     if (level.getTile(tileX, tileY) != TileType::Wall) {
         position = next;
-    } else {
+    } else { // hit a wall
         direction = Direction::None;
         desiredDirection = Direction::None;
     }
@@ -100,16 +105,7 @@ bool PacMan::canMove(Direction dir, const LevelManager& lvl,
         curX >= lvl.getWidth() || curY >= lvl.getHeight())
         return false;
 
-    bool ok = lvl.getTile(curX, curY) != TileType::Wall;
-
-    // if the requested tile is a wall, forget the request
-    // so the player can press a different key straight away
-    // instead of being "stuck"
-    if (!ok) {
-        std::cout << "requested tile is a wall" << "/n";
-        desiredDirection = Direction::None;
-    }
-    return ok;
+    return lvl.getTile(curX, curY) != TileType::Wall;
 }
 
 Direction PacMan::getDirection() {
