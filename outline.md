@@ -78,24 +78,24 @@ Tasks:
 
 Tasks:
 
-- Fields: position, direction, speed, sprite.
-- Methods: `update(float deltaTime)`, `draw()`, `move(direction)`.
+- Fields: position, direction, speed, sprite. 🟩
+- Methods: `update(float deltaTime)`, `draw()`, `move(direction)`. 🟩
 
 ### Implement `PacMan` Class
 
 Tasks:
 
-- Extend `Entity`, handle input.
-- Check for collisions.
-- Track lives.
+- Extend `Entity`, handle input. 🟩
+- Check for collisions. 🟩
+- Track lives. $TODO
 
 ### Test Pac-Man Movement
 
 Tasks:
 
-- Hook `PacMan.handleInput(input)` to `InputManager`.
-- Use `Maze.isWall(pos)` for movement restriction.
-- Render position each frame.
+- Hook `PacMan.handleInput(input)` to `InputManager`. 🟩
+- Use `Maze.isWall(pos)` for movement restriction. 🟩
+- Render position each frame. 🟩
 
 ### Create `Ghost` Class
 
@@ -313,10 +313,10 @@ Tasks:
 
 ## ✅ Checklist Summary
 
-- [ ] Project Setup – Game loop, framework
-- [ ] Input Management – Directions, hooking up controls
-- [ ] Maze / TileMap – Walls, pellets, rendering
-- [ ] Entities – Pac-Man, Ghosts, base Entity structure
+- [X] Project Setup – Game loop, framework
+- [X] Input Management – Directions, hooking up controls
+- [X] Maze / TileMap – Walls, pellets, rendering
+- [.] Entities – Pac-Man, Ghosts, base Entity structure
 - [ ] Collision & Scoring – CollisionManager, ScoreManager, lives system
 - [ ] Power Pellets – Frightened ghost mode, timers
 - [ ] Level Transitions – Win conditions, game over conditions
@@ -325,3 +325,12 @@ Tasks:
 - [ ] Testing & Tuning – Collision corner cases, speed balancing
 - [ ] High Scores – Optional persistence
 - [ ] Polish & Release – Final code cleanup, build, and deployment
+
+## AIM
+
+We are in the middle of rewriting one of the features, with the aim being:
+
+- pacman keeps on going in one direction until some key is pressed or is stopped by a wall
+- if a wall is in the direction in which the key is pressed it doesn't try to go there, but the last pressed direction is stored in case there is empty space and then it changes that direction (so let's say we are going right, we press up, but there's a wall. It keeps going in the same direction it was going, and then a few frames later there is no wall UP so we change the direction and go there
+- we are in the center of a lane most of the time
+- it's possible to go 'into' a wall and stop going in some direction ONLY if there was no additional input from the user and we run into the end of the 'lane'
