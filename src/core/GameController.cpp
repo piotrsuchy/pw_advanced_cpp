@@ -41,15 +41,40 @@ void GameController::run()
             float offsetX = (window.getSize().x - level.getWidth() * scaledTileSize) / 2.0f;
             float offsetY = (window.getSize().y - level.getHeight() * scaledTileSize) / 2.0f;
 
-            // Position Pac-Man in the center of the first row where there's a pellet
+            // Position Pac-Man: prefer first pellet in row 1; otherwise any non-wall tile
+            bool placed = false;
             for (int x = 0; x < level.getWidth(); ++x)
             {
                 if (level.getTile(x, 1) == TileType::Pellet)
                 {
                     pacman.setPosition(offsetX + x * scaledTileSize + scaledTileSize / 2,
                                        offsetY + scaledTileSize + scaledTileSize / 2);
+                    placed = true;
                     break;
                 }
+            }
+
+            if (!placed)
+            {
+                for (int y = 0; y < level.getHeight() && !placed; ++y)
+                {
+                    for (int x = 0; x < level.getWidth(); ++x)
+                    {
+                        if (level.getTile(x, y) != TileType::Wall)
+                        {
+                            pacman.setPosition(offsetX + x * scaledTileSize + scaledTileSize / 2,
+                                               offsetY + y * scaledTileSize + scaledTileSize / 2);
+                            placed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!placed)
+            {
+                // Ultimate fallback: center of window
+                pacman.setPosition(window.getSize().x / 2.0f, window.getSize().y / 2.0f);
             }
 
             firstFrame = false;
