@@ -30,6 +30,11 @@ void PacMan::update(float dt, LevelManager& level, float scaledTileSize, float s
         std::cout << "DEBUG: ALIGNED: " << aligned(scaledTileSize, offX, offY) << "\n";
     }
 
+    // remember last non-None facing direction
+    if (direction != Direction::None) {
+        facingDirection = direction;
+    }
+
     // compute tentative next position along current heading
     sf::Vector2f next = position;
     float        v    = speed * scale;
@@ -104,20 +109,27 @@ void PacMan::update(float dt, LevelManager& level, float scaledTileSize, float s
         applyMouthFrame();
     }
 
-    // Orient sprite to current direction
-    float rotationDegrees = 0.f;
-    switch (direction) {
+    // Orient sprite to current or last facing direction
+    float     rotationDegrees = 0.f;
+    float     scaleX          = scale;
+    float     scaleY          = scale;
+    Direction orientDir       = (direction == Direction::None ? facingDirection : direction);
+    switch (orientDir) {
         case Direction::Right:
             rotationDegrees = 0.f;
+            scaleX          = scale;  // normal
             break;
         case Direction::Left:
-            rotationDegrees = 180.f;
+            rotationDegrees = 0.f;     // mirror horizontally instead of rotating 180° to keep eye on top
+            scaleX          = -scale;  // flip X
             break;
         case Direction::Up:
-            rotationDegrees = 270.f;
+            rotationDegrees = 270.f;  // face up
+            scaleX          = scale;
             break;
         case Direction::Down:
-            rotationDegrees = 90.f;
+            rotationDegrees = 90.f;  // face down
+            scaleX          = scale;
             break;
         default:
             break;
@@ -125,7 +137,7 @@ void PacMan::update(float dt, LevelManager& level, float scaledTileSize, float s
     sprite.setRotation(rotationDegrees);
 
     // book‑keeping and drawing stuff
-    sprite.setScale(scale, scale);
+    sprite.setScale(scaleX, scaleY);
     sprite.setPosition(position);
     level.collectPellet(curX, curY);
 }

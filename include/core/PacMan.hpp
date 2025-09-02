@@ -16,6 +16,7 @@ class PacMan : public Entity {
     // sf::Vector2f position{400.f, 340.f};
     Direction direction{Direction::None};         // where it goes now
     Direction desiredDirection{Direction::None};  // queued turn
+    Direction facingDirection{Direction::Right};  // last non-None facing
     float     speed{576.f};                       // 9 * 64.f
 
     bool aligned(float tile, float offX, float offY) const;
