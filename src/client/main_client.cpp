@@ -5,6 +5,7 @@
 #include "core/InputManager.hpp"
 #include "core/LevelManager.hpp"
 #include "graphics/LevelRenderer.hpp"
+#include "graphics/PacmanRenderer.hpp"
 
 int main(int argc, char** argv) {
     sf::IpAddress  ip   = sf::IpAddress::LocalHost;
@@ -29,18 +30,15 @@ int main(int argc, char** argv) {
 
     LevelManager level;
     level.loadLevel(1);
-    LevelRenderer renderer;
-
-    sf::CircleShape p0(10.f);
-    p0.setFillColor(sf::Color::Yellow);
-    sf::CircleShape p1(10.f);
-    p1.setFillColor(sf::Color::Cyan);
+    LevelRenderer  renderer;
+    PacmanRenderer r0, r1;
 
     InputManager input;
     Direction    lastSent = Direction::None;
     sf::Uint32   seq      = 0;
 
-    float p0x = 120.f, p0y = 120.f, p1x = 680.f, p1y = 480.f;
+    float     p0x = 120.f, p0y = 120.f, p1x = 680.f, p1y = 480.f;
+    Direction f0 = Direction::Right, f1 = Direction::Left;
 
     while (window.isOpen()) {
         sf::Event e;
@@ -69,13 +67,47 @@ int main(int argc, char** argv) {
             }
         }
 
-        p0.setPosition(p0x, p0y);
-        p1.setPosition(p1x, p1y);
+        // Estimate facing and movement for animation
+        static float lp0x = p0x, lp0y = p0y, lp1x = p1x, lp1y = p1y;
+        float        dv0x = p0x - lp0x, dv0y = p0y - lp0y;
+        float        dv1x = p1x - lp1x, dv1y = p1y - lp1y;
+        auto         faceFrom = [](float dx, float dy) {
+            if (std::abs(dx) + std::abs(dy) < 0.001f) return Direction::None;
+            if (std::abs(dx) > std::abs(dy)) return dx > 0 ? Direction::Right : Direction::Left;
+            return dy > 0 ? Direction::Down : Direction::Up;
+        };
+        Direction nf0 = faceFrom(dv0x, dv0y);
+        if (nf0 != Direction::None) f0 = nf0;
+        Direction nf1 = faceFrom(dv1x, dv1y);
+        if (nf1 != Direction::None) f1 = nf1;
+        lp0x = p0x;
+        lp0y = p0y;
+        lp1x = p1x;
+        lp1y = p1y;
+
+        bool moving0 = (dv0x * dv0x + dv0y * dv0y) > 0.0001f;
+        bool moving1 = (dv1x * dv1x + dv1y * dv1y) > 0.0001f;
+
+        // Compute scale to match LevelRenderer
+        int   gridW  = level.getWidth();
+        int   gridH  = level.getHeight();
+        int   totalW = gridW * 64;
+        int   totalH = gridH * 64;
+        float scaleX = window.getSize().x / static_cast<float>(totalW);
+        float scaleY = window.getSize().y / static_cast<float>(totalH);
+        float scale  = std::min(scaleX, scaleY) * 0.9f;
+
+        r0.setFacing(f0);
+        r0.setPosition(p0x, p0y);
+        r0.tick(1.0f / 60.0f, moving0, scale);
+        r1.setFacing(f1);
+        r1.setPosition(p1x, p1y);
+        r1.tick(1.0f / 60.0f, moving1, scale);
 
         window.clear(sf::Color::Black);
         renderer.draw(window, level);
-        window.draw(p0);
-        window.draw(p1);
+        r0.draw(window);
+        r1.draw(window);
         window.display();
     }
 

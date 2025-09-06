@@ -58,6 +58,7 @@ if(CLIENT_SOURCES)
     src/core/InputManager.cpp
     src/core/LevelManager.cpp
     src/graphics/LevelRenderer.cpp
+    src/graphics/PacmanRenderer.cpp
   )
 endif()
 
