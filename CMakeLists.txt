@@ -3,13 +3,15 @@ project(PacManGame)
 
 set(CMAKE_CXX_STANDARD 17)
 
+option(ENABLE_SINGLEPLAYER "Build legacy singleplayer target" ON)
+
 # Include paths
 include_directories(include)
 
 # Add SFML
 find_package(SFML 2.5 COMPONENTS graphics window system network REQUIRED)
 
-# Source files
+# Source files (legacy singleplayer)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     src/core/*.cpp
     src/graphics/*.cpp
@@ -22,11 +24,12 @@ file(GLOB_RECURSE SHARED_LOGIC CONFIGURE_DEPENDS
 )
 add_library(pacman_shared STATIC ${SHARED_LOGIC})
 
-# Define the executable
-add_executable(PacManGame ${SOURCES})
-
-# Link SFML libraries and shared logic
-target_link_libraries(PacManGame sfml-graphics sfml-window sfml-system pacman_shared)
+if(ENABLE_SINGLEPLAYER)
+  # Define the executable
+  add_executable(PacManGame ${SOURCES})
+  # Link SFML libraries and shared logic
+  target_link_libraries(PacManGame sfml-graphics sfml-window sfml-system pacman_shared)
+endif()
 
 # -----------------------------------------------------------------------------
 # Server / Client targets for multiplayer PoC
