@@ -24,11 +24,38 @@ else
     echo "WARNING: clang-tidy not found; skipping lint step" >&2
 fi
 
-echo "==> Building PacManGame"
+echo "==> Building all targets"
 cmake --build build -j 8
 
-echo "==> Running PacManGame"
-exec ./build/PacManGame
+mode="${1:-}"
+if [[ -z "$mode" ]]; then
+  echo "Usage: $0 localhost | server [--port <num> --tick <hz>] | client [--ip <addr> --port <num>]" >&2
+  exit 0
+fi
+
+case "$mode" in
+  localhost)
+    echo "==> Running server (localhost, 54000, 60 Hz)"
+    ./build/pacman_server --port 54000 --tick 60 >/tmp/pacman_server.log 2>&1 &
+    sleep 0.2
+    echo "==> Running client"
+    exec ./build/pacman_client --ip 127.0.0.1 --port 54000
+    ;;
+  server)
+    shift || true
+    echo "==> Running server with args: $*"
+    exec ./build/pacman_server "$@"
+    ;;
+  client)
+    shift || true
+    echo "==> Running client with args: $*"
+    exec ./build/pacman_client "$@"
+    ;;
+  *)
+    echo "Unknown mode: $mode" >&2
+    exit 1
+    ;;
+ esac
 
 
 
