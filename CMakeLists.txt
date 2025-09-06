@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(include)
 
 # Add SFML
-find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
+find_package(SFML 2.5 COMPONENTS graphics window system network REQUIRED)
 
 # Source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
@@ -16,11 +16,47 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     main.cpp
 )
 
+# Add shared logic library (graphics-free)
+file(GLOB_RECURSE SHARED_LOGIC CONFIGURE_DEPENDS
+    src/shared/*.cpp
+)
+add_library(pacman_shared STATIC ${SHARED_LOGIC})
+
 # Define the executable
 add_executable(PacManGame ${SOURCES})
 
-# Link SFML libraries
-target_link_libraries(PacManGame sfml-graphics sfml-window sfml-system)
+# Link SFML libraries and shared logic
+target_link_libraries(PacManGame sfml-graphics sfml-window sfml-system pacman_shared)
+
+# -----------------------------------------------------------------------------
+# Server / Client targets for multiplayer PoC
+# -----------------------------------------------------------------------------
+
+file(GLOB_RECURSE SERVER_SOURCES CONFIGURE_DEPENDS
+    src/server/*.cpp
+)
+
+file(GLOB_RECURSE CLIENT_SOURCES CONFIGURE_DEPENDS
+    src/client/*.cpp
+)
+
+if(SERVER_SOURCES)
+  add_executable(pacman_server ${SERVER_SOURCES})
+  target_link_libraries(pacman_server pacman_shared sfml-network sfml-system)
+  # Logic-only dependency for level grid
+  target_sources(pacman_server PRIVATE src/core/LevelManager.cpp)
+endif()
+
+if(CLIENT_SOURCES)
+  add_executable(pacman_client ${CLIENT_SOURCES})
+  target_link_libraries(pacman_client pacman_shared sfml-graphics sfml-window sfml-network sfml-system)
+  # Reuse core/graphics modules needed for rendering and input
+  target_sources(pacman_client PRIVATE
+    src/core/InputManager.cpp
+    src/core/LevelManager.cpp
+    src/graphics/LevelRenderer.cpp
+  )
+endif()
 
 # -----------------------------------------------------------------------------
 # Developer convenience targets: clang-format and clang-tidy

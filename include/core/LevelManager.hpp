@@ -1,5 +1,5 @@
 #pragma once
-#include <SFML/Graphics.hpp>
+#include <cstdint>
 #include <vector>
 
 enum class TileType : int { Empty = 0, Wall = 1, Pellet = 2, PowerPellet = 3 };

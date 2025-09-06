@@ -2,7 +2,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
 
-enum class Direction { None, Up, Down, Left, Right };
+#include "shared/GameTypes.hpp"
 
 class InputManager {
    public:
