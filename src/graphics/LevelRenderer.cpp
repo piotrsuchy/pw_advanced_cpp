@@ -11,13 +11,13 @@ LevelRenderer::LevelRenderer() {
     } else {
         std::cout << "Wall texture loaded: " << wallTexture.getSize().x << "x" << wallTexture.getSize().y << "\n";
     }
-    if (!pelletTexture.loadFromFile("assets/textures/dot.png")) {
-        std::cerr << "Failed to load dot.png\n";
+    if (!pelletTexture.loadFromFile("assets/textures/pellet.png")) {
+        std::cerr << "Failed to load pellet.png\n";
     } else {
         std::cout << "Pellet texture loaded: " << pelletTexture.getSize().x << "x" << pelletTexture.getSize().y << "\n";
     }
-    if (!powerPelletTexture.loadFromFile("assets/textures/cherry.png")) {
-        std::cerr << "Failed to load cherry.png\n";
+    if (!powerPelletTexture.loadFromFile("assets/textures/power_pellet.png")) {
+        std::cerr << "Failed to load power_pellet.png\n";
     } else {
         std::cout << "Power pellet texture loaded: " << powerPelletTexture.getSize().x << "x"
                   << powerPelletTexture.getSize().y << "\n";
