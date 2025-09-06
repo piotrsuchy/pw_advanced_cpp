@@ -86,15 +86,6 @@ void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {
         std::cout << "Scaled tile size: " << scaledTileSize << "\n";
         std::cout << "Offset: " << offsetX << "," << offsetY << "\n";
 
-        // Print the first few maze tiles to verify content
-        std::cout << "Maze content (first 5x5):" << std::endl;
-        for (int y = 0; y < std::min(5, level.getHeight()); ++y) {
-            for (int x = 0; x < std::min(5, level.getWidth()); ++x) {
-                std::cout << static_cast<int>(level.getTile(x, y)) << " ";
-            }
-            std::cout << std::endl;
-        }
-
         firstDraw = false;
     }
 

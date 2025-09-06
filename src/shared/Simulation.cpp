@@ -76,6 +76,9 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     players[0].update(dt, level, scaledTileSize, scale);
     players[1].update(dt, level, scaledTileSize, scale);
 
+    // collected pellet deltas for this tick
+    consumedThisTick.clear();
+
     // Pellet and power-pellet collection and timers
     auto handlePlayer = [&](int idx) {
         // Convert position to grid cell
@@ -89,9 +92,11 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         TileType    consumed = level.collectPelletTyped(curX, curY);
         if (consumed == TileType::Pellet) {
             score[idx] += 1;
+            consumedThisTick.push_back({curX, curY, consumed});
         } else if (consumed == TileType::PowerPellet) {
             score[idx] += 1;
             powerTimer[idx] = 10.0f;  // 10 seconds of power
+            consumedThisTick.push_back({curX, curY, consumed});
         }
         if (powerTimer[idx] > 0.f) {
             powerTimer[idx] -= dt;
@@ -112,4 +117,9 @@ PlayerStateView Simulation::getPlayerState(int playerIndex) const {
     v.powered       = powerTimer[playerIndex] > 0.f;
     v.powerTimeLeft = powerTimer[playerIndex];
     return v;
+}
+
+void Simulation::drainConsumed(std::vector<ConsumedPellet>& out) {
+    out = std::move(consumedThisTick);
+    consumedThisTick.clear();
 }
