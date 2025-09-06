@@ -8,8 +8,8 @@ option(ENABLE_SINGLEPLAYER "Build legacy singleplayer target" ON)
 # Include paths
 include_directories(include)
 
-# Add SFML
-find_package(SFML 2.5 COMPONENTS graphics window system network REQUIRED)
+# Add SFML (only the components needed globally). Server needs just network.
+find_package(SFML 2.5 COMPONENTS network REQUIRED)
 
 # Source files (legacy singleplayer)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
@@ -25,6 +25,8 @@ file(GLOB_RECURSE SHARED_LOGIC CONFIGURE_DEPENDS
 add_library(pacman_shared STATIC ${SHARED_LOGIC})
 
 if(ENABLE_SINGLEPLAYER)
+  # Singleplayer requires graphics/window/system too
+  find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
   # Define the executable
   add_executable(PacManGame ${SOURCES})
   # Link SFML libraries and shared logic
@@ -51,6 +53,8 @@ if(SERVER_SOURCES)
 endif()
 
 if(CLIENT_SOURCES)
+  # Client requires graphics/window/system
+  find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
   add_executable(pacman_client ${CLIENT_SOURCES})
   target_link_libraries(pacman_client pacman_shared sfml-graphics sfml-window sfml-network sfml-system)
   # Reuse core/graphics modules needed for rendering and input
