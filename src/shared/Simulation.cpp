@@ -75,13 +75,41 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
 
     players[0].update(dt, level, scaledTileSize, scale);
     players[1].update(dt, level, scaledTileSize, scale);
+
+    // Pellet and power-pellet collection and timers
+    auto handlePlayer = [&](int idx) {
+        // Convert position to grid cell
+        const int   gridW    = level.getWidth();
+        const int   gridH    = level.getHeight();
+        const float offX     = (800.f - gridW * scaledTileSize) / 2.f;
+        const float offY     = (600.f - gridH * scaledTileSize) / 2.f;
+        auto        p        = players[idx].getPosition();
+        int         curX     = static_cast<int>(std::floor((p.x - offX) / scaledTileSize));
+        int         curY     = static_cast<int>(std::floor((p.y - offY) / scaledTileSize));
+        TileType    consumed = level.collectPelletTyped(curX, curY);
+        if (consumed == TileType::Pellet) {
+            score[idx] += 1;
+        } else if (consumed == TileType::PowerPellet) {
+            score[idx] += 1;
+            powerTimer[idx] = 10.0f;  // 10 seconds of power
+        }
+        if (powerTimer[idx] > 0.f) {
+            powerTimer[idx] -= dt;
+            if (powerTimer[idx] < 0.f) powerTimer[idx] = 0.f;
+        }
+    };
+    handlePlayer(0);
+    handlePlayer(1);
 }
 
 PlayerStateView Simulation::getPlayerState(int playerIndex) const {
     PlayerStateView v{};
     if (playerIndex < 0 || playerIndex > 1) return v;
-    auto p     = players[playerIndex].getPosition();
-    v.position = p;
-    v.facing   = players[playerIndex].getFacing();
+    auto p          = players[playerIndex].getPosition();
+    v.position      = p;
+    v.facing        = players[playerIndex].getFacing();
+    v.score         = score[playerIndex];
+    v.powered       = powerTimer[playerIndex] > 0.f;
+    v.powerTimeLeft = powerTimer[playerIndex];
     return v;
 }

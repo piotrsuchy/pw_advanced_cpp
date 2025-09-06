@@ -7,6 +7,9 @@
 struct PlayerStateView {
     Vec2      position;
     Direction facing;
+    int       score{0};
+    bool      powered{false};
+    float     powerTimeLeft{0.f};
 };
 
 class Simulation {
@@ -31,4 +34,8 @@ class Simulation {
     LevelManager level;
     PacmanLogic  players[2];
     bool         initializedPositions{false};
+
+    // Scoring and power status
+    int   score[2]      = {0, 0};
+    float powerTimer[2] = {0.f, 0.f};
 };

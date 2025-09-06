@@ -53,7 +53,7 @@ void PacmanLogic::update(float dt, LevelManager& level, float scaledTileSize, fl
     else if (direction == Direction::Up || direction == Direction::Down)
         position.x = cx;
 
-    level.collectPellet(curX, curY);
+    // Pellet collection is handled authoritatively in Simulation
 }
 
 bool PacmanLogic::aligned(float tile, float offX, float offY) const {

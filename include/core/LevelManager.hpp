@@ -34,6 +34,8 @@ class LevelManager {
     }
 
     bool collectPellet(int x, int y);
+    // Returns the type of pellet consumed at (x,y), or TileType::Empty if none
+    TileType collectPelletTyped(int x, int y);
 
    private:
     std::vector<std::vector<TileType>> grid;
