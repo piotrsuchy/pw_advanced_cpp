@@ -112,6 +112,25 @@ int main(int argc, char** argv) {
                     in >> cx >> cy >> t;
                     if (t == 1 || t == 2) level.setTile(cx, cy, TileType::Empty);
                 }
+            } else if (kind == "LEVEL") {
+                // Full level sync from server
+                sf::Uint16 w, h;
+                in >> w >> h;
+                // Rebuild level grid from packet tiles
+                for (int y = 0; y < static_cast<int>(h); ++y) {
+                    for (int x = 0; x < static_cast<int>(w); ++x) {
+                        sf::Uint8 tv;
+                        in >> tv;
+                        TileType t = TileType::Empty;
+                        if (tv == 1)
+                            t = TileType::Wall;
+                        else if (tv == 2)
+                            t = TileType::Pellet;
+                        else if (tv == 3)
+                            t = TileType::PowerPellet;
+                        level.setTile(x, y, t);
+                    }
+                }
             }
         }
 

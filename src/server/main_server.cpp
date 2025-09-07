@@ -65,6 +65,23 @@ int main(int argc, char** argv) {
                         connected[freeIdx] = true;
                         selector.add(*client[freeIdx]);
                         std::cout << "[SERVER] Client connected in slot " << freeIdx << std::endl;
+
+                        // Send full level state immediately to sync client with server
+                        sf::Packet levelPkt;
+                        levelPkt << std::string("LEVEL");
+                        const int w = sim.getLevel().getWidth();
+                        const int h = sim.getLevel().getHeight();
+                        levelPkt << static_cast<sf::Uint16>(w) << static_cast<sf::Uint16>(h);
+                        for (int y = 0; y < h; ++y) {
+                            for (int x = 0; x < w; ++x) {
+                                auto t = sim.getLevel().getTile(x, y);
+                                levelPkt << static_cast<sf::Uint8>(
+                                    t == TileType::PowerPellet
+                                        ? 3
+                                        : (t == TileType::Pellet ? 2 : (t == TileType::Wall ? 1 : 0)));
+                            }
+                        }
+                        client[freeIdx]->send(levelPkt);
                     } else {
                         sock->disconnect();
                     }
