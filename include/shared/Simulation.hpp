@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "core/LevelManager.hpp"
 #include "shared/GameTypes.hpp"
 #include "shared/PacmanLogic.hpp"
@@ -7,6 +9,9 @@
 struct PlayerStateView {
     Vec2      position;
     Direction facing;
+    int       score{0};
+    bool      powered{false};
+    float     powerTimeLeft{0.f};
 };
 
 class Simulation {
@@ -27,8 +32,22 @@ class Simulation {
         return level;
     }
 
+    struct ConsumedPellet {
+        int      x;
+        int      y;
+        TileType type;
+    };
+    // Moves consumed pellets from the last step into 'out' and clears the internal buffer
+    void drainConsumed(std::vector<ConsumedPellet>& out);
+
    private:
     LevelManager level;
     PacmanLogic  players[2];
     bool         initializedPositions{false};
+
+    // Scoring and power status
+    int   score[2]      = {0, 0};
+    float powerTimer[2] = {0.f, 0.f};
+
+    std::vector<ConsumedPellet> consumedThisTick;
 };

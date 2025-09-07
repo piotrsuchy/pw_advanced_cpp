@@ -11,13 +11,13 @@ LevelRenderer::LevelRenderer() {
     } else {
         std::cout << "Wall texture loaded: " << wallTexture.getSize().x << "x" << wallTexture.getSize().y << "\n";
     }
-    if (!pelletTexture.loadFromFile("assets/textures/dot.png")) {
-        std::cerr << "Failed to load dot.png\n";
+    if (!pelletTexture.loadFromFile("assets/textures/pellet.png")) {
+        std::cerr << "Failed to load pellet.png\n";
     } else {
         std::cout << "Pellet texture loaded: " << pelletTexture.getSize().x << "x" << pelletTexture.getSize().y << "\n";
     }
-    if (!powerPelletTexture.loadFromFile("assets/textures/cherry.png")) {
-        std::cerr << "Failed to load cherry.png\n";
+    if (!powerPelletTexture.loadFromFile("assets/textures/power_pellet.png")) {
+        std::cerr << "Failed to load power_pellet.png\n";
     } else {
         std::cout << "Power pellet texture loaded: " << powerPelletTexture.getSize().x << "x"
                   << powerPelletTexture.getSize().y << "\n";
@@ -85,15 +85,6 @@ void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {
         std::cout << "Original tile size: " << tileSize << "\n";
         std::cout << "Scaled tile size: " << scaledTileSize << "\n";
         std::cout << "Offset: " << offsetX << "," << offsetY << "\n";
-
-        // Print the first few maze tiles to verify content
-        std::cout << "Maze content (first 5x5):" << std::endl;
-        for (int y = 0; y < std::min(5, level.getHeight()); ++y) {
-            for (int x = 0; x < std::min(5, level.getWidth()); ++x) {
-                std::cout << static_cast<int>(level.getTile(x, y)) << " ";
-            }
-            std::cout << std::endl;
-        }
 
         firstDraw = false;
     }

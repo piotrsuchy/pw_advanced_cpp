@@ -102,12 +102,23 @@ int main(int argc, char** argv) {
             lastTick = now;
             sim.step(1.0f / tickHz, scaledTile, scale);
 
+            // Drain pellet deltas for this tick once
+            std::vector<Simulation::ConsumedPellet> deltas;
+            sim.drainConsumed(deltas);
+
             for (int i = 0; i < 2; ++i) {
                 if (!connected[i]) continue;
-                auto       p0 = sim.getPlayerState(0).position;
-                auto       p1 = sim.getPlayerState(1).position;
+                auto       s0 = sim.getPlayerState(0);
+                auto       s1 = sim.getPlayerState(1);
                 sf::Packet out;
-                out << std::string("SNAPSHOT") << (float)p0.x << (float)p0.y << (float)p1.x << (float)p1.y;
+                out << std::string("SNAPSHOT") << (float)s0.position.x << (float)s0.position.y << (sf::Uint16)s0.score
+                    << (sf::Uint8)(s0.powered ? 1 : 0) << (float)s1.position.x << (float)s1.position.y
+                    << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0)
+                    << static_cast<sf::Uint16>(deltas.size());
+                for (auto& d : deltas) {
+                    out << static_cast<sf::Uint16>(d.x) << static_cast<sf::Uint16>(d.y)
+                        << static_cast<sf::Uint8>(d.type == TileType::PowerPellet ? 2 : 1);
+                }
                 client[i]->send(out);
             }
         }

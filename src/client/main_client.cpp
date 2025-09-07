@@ -38,6 +38,8 @@ int main(int argc, char** argv) {
     sf::Uint32   seq      = 0;
 
     float     p0x = 120.f, p0y = 120.f, p1x = 680.f, p1y = 480.f;
+    uint16_t  score0 = 0, score1 = 0;
+    bool      pow0 = false, pow1 = false;
     Direction f0 = Direction::Right, f1 = Direction::Left;
 
     while (window.isOpen()) {
@@ -63,7 +65,20 @@ int main(int argc, char** argv) {
             std::string kind;
             in >> kind;
             if (kind == "SNAPSHOT") {
-                in >> p0x >> p0y >> p1x >> p1y;
+                sf::Uint16 s0, s1;
+                sf::Uint8  pw0, pw1;
+                sf::Uint16 n;
+                in >> p0x >> p0y >> s0 >> pw0 >> p1x >> p1y >> s1 >> pw1 >> n;
+                score0 = s0;
+                score1 = s1;
+                pow0   = (pw0 != 0);
+                pow1   = (pw1 != 0);
+                for (sf::Uint16 k = 0; k < n; ++k) {
+                    sf::Uint16 cx, cy;
+                    sf::Uint8  t;
+                    in >> cx >> cy >> t;
+                    if (t == 1 || t == 2) level.setTile(cx, cy, TileType::Empty);
+                }
             }
         }
 
