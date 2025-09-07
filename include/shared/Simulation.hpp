@@ -4,6 +4,7 @@
 
 #include "core/LevelManager.hpp"
 #include "shared/GameTypes.hpp"
+#include "shared/GhostLogic.hpp"
 #include "shared/PacmanLogic.hpp"
 
 struct PlayerStateView {
@@ -37,6 +38,8 @@ class Simulation {
     const LevelManager& getLevel() const {
         return level;
     }
+    // Ghost access
+    Vec2 getGhostPosition(int ghostIndex) const;
 
     struct ConsumedPellet {
         int      x;
@@ -52,6 +55,10 @@ class Simulation {
    private:
     LevelManager level;
     PacmanLogic  players[2];
+    Blinky       blinky;
+    Pinky        pinky;
+    Inky         inky;
+    Clyde        clyde;
     bool         initializedPositions{false};
 
     // Scoring and power status

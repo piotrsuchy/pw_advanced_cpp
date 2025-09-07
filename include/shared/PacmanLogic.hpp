@@ -35,5 +35,5 @@ class PacmanLogic {
     Direction direction{Direction::None};
     Direction desiredDirection{Direction::None};
     Direction facingDirection{Direction::Right};
-    float     speed{576.f};
+    float     speed{384.f};
 };

@@ -73,11 +73,26 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             }
         }
 
+        // Place ghosts near the center box corners
+        float gx = offX + (gridW / 2) * scaledTileSize + scaledTileSize * 0.5f;
+        float gy = offY + (gridH / 2) * scaledTileSize + scaledTileSize * 0.5f;
+        blinky.setPosition(gx - 2 * scaledTileSize, gy);
+        pinky.setPosition(gx + 2 * scaledTileSize, gy);
+        inky.setPosition(gx, gy - 2 * scaledTileSize);
+        clyde.setPosition(gx, gy + 2 * scaledTileSize);
+
         initializedPositions = true;
     }
 
     players[0].update(dt, level, scaledTileSize, scale);
     players[1].update(dt, level, scaledTileSize, scale);
+    // Update ghosts
+    auto p0 = players[0].getPosition();
+    auto p1 = players[1].getPosition();
+    blinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    pinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    inky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    clyde.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
 
     // collected pellet deltas for this tick
     consumedThisTick.clear();
@@ -141,5 +156,22 @@ void Simulation::award(int playerIndex, ScoreEvent eventType) {
             break;
         default:
             break;
+    }
+}
+
+Vec2 Simulation::getGhostPosition(int ghostIndex) const {
+    switch (ghostIndex) {
+        case 0:
+            return blinky.getPosition();
+        case 1:
+            return pinky.getPosition();
+        case 2:
+            return inky.getPosition();
+        case 3:
+            return clyde.getPosition();
+        default: {
+            Vec2 v{};
+            return v;
+        }
     }
 }

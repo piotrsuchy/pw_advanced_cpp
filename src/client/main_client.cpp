@@ -4,6 +4,7 @@
 
 #include "core/InputManager.hpp"
 #include "core/LevelManager.hpp"
+#include "graphics/GhostRenderer.hpp"
 #include "graphics/LevelRenderer.hpp"
 #include "graphics/PacmanRenderer.hpp"
 
@@ -32,12 +33,21 @@ int main(int argc, char** argv) {
     level.loadLevel(1);
     LevelRenderer  renderer;
     PacmanRenderer r0, r1;
+    GhostRenderer  g0, g1, g2, g3;
+    // Use textures for Clyde (g3)
+    g3.setDirectionalTextures("assets/textures/clyde_up.png", "assets/textures/clyde_down.png",
+                              "assets/textures/clyde_left.png", "assets/textures/clyde_right.png");
+    g0.setBaseColor(sf::Color(255, 0, 0));      // Blinky
+    g1.setBaseColor(sf::Color(255, 184, 255));  // Pinky
+    g2.setBaseColor(sf::Color(0, 255, 255));    // Inky
+    g3.setBaseColor(sf::Color(255, 184, 82));   // Clyde
 
     InputManager input;
     Direction    lastSent = Direction::None;
     sf::Uint32   seq      = 0;
 
     float     p0x = 120.f, p0y = 120.f, p1x = 680.f, p1y = 480.f;
+    float     gx0 = 400.f, gy0 = 300.f, gx1 = 400.f, gy1 = 300.f, gx2 = 400.f, gy2 = 300.f, gx3 = 400.f, gy3 = 300.f;
     uint16_t  score0 = 0, score1 = 0;
     bool      pow0 = false, pow1 = false;
     Direction f0 = Direction::Right, f1 = Direction::Left;
@@ -101,7 +111,10 @@ int main(int argc, char** argv) {
                 sf::Uint16 s0, s1;
                 sf::Uint8  pw0, pw1;
                 sf::Uint16 n;
-                in >> p0x >> p0y >> s0 >> pw0 >> p1x >> p1y >> s1 >> pw1 >> n;
+                // Extend snapshot with 4 ghost positions
+                in >> p0x >> p0y >> s0 >> pw0 >> p1x >> p1y >> s1 >> pw1;
+                in >> gx0 >> gy0 >> gx1 >> gy1 >> gx2 >> gy2 >> gx3 >> gy3;
+                in >> n;
                 score0 = s0;
                 score1 = s1;
                 pow0   = (pw0 != 0);
@@ -170,11 +183,34 @@ int main(int argc, char** argv) {
         r1.setFacing(f1);
         r1.setPosition(p1x, p1y);
         r1.tick(1.0f / 60.0f, moving1, scale);
+        g0.setPosition(gx0, gy0);
+        g1.setPosition(gx1, gy1);
+        g2.setPosition(gx2, gy2);
+        g3.setPosition(gx3, gy3);
+        // Approximate facing for Clyde from last movement like pacman
+        static float lgx3 = gx3, lgy3 = gy3;
+        float        ddx = gx3 - lgx3, ddy = gy3 - lgy3;
+        if (std::abs(ddx) + std::abs(ddy) > 0.001f) {
+            if (std::abs(ddx) > std::abs(ddy))
+                g3.setFacing(ddx > 0 ? Direction::Right : Direction::Left);
+            else
+                g3.setFacing(ddy > 0 ? Direction::Down : Direction::Up);
+        }
+        lgx3 = gx3;
+        lgy3 = gy3;
+        g0.tick(1.0f / 60.0f, scale);
+        g1.tick(1.0f / 60.0f, scale);
+        g2.tick(1.0f / 60.0f, scale);
+        g3.tick(1.0f / 60.0f, scale);
 
         window.clear(sf::Color::Black);
         renderer.draw(window, level);
         r0.draw(window);
         r1.draw(window);
+        g0.draw(window);
+        g1.draw(window);
+        g2.draw(window);
+        g3.draw(window);
 
         // Draw HUD scores
         if (fontLoaded) {
