@@ -42,6 +42,39 @@ int main(int argc, char** argv) {
     bool      pow0 = false, pow1 = false;
     Direction f0 = Direction::Right, f1 = Direction::Left;
 
+    // HUD font and texts
+    sf::Font hudFont;
+    bool     fontLoaded = false;
+    {
+        const char* fontCandidates[] = {"/Library/Fonts/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
+                                        "/System/Library/Fonts/Supplemental/Helvetica.ttf",
+                                        "/System/Library/Fonts/Supplemental/Tahoma.ttf",
+                                        "/System/Library/Fonts/Supplemental/DejaVuSans.ttf"};
+        for (const char* path : fontCandidates) {
+            if (hudFont.loadFromFile(path)) {
+                fontLoaded = true;
+                break;
+            }
+        }
+        if (!fontLoaded) {
+            std::cerr << "[CLIENT] Warning: Could not load a system font. Scores will not be drawn.\n";
+        }
+    }
+    sf::Text scoreText0;
+    sf::Text scoreText1;
+    if (fontLoaded) {
+        scoreText0.setFont(hudFont);
+        scoreText1.setFont(hudFont);
+        scoreText0.setCharacterSize(24);
+        scoreText1.setCharacterSize(24);
+        scoreText0.setFillColor(sf::Color(255, 255, 0));  // yellow-ish for P1
+        scoreText1.setFillColor(sf::Color(0, 200, 255));  // cyan-ish for P2
+        scoreText0.setOutlineThickness(2.f);
+        scoreText1.setOutlineThickness(2.f);
+        scoreText0.setOutlineColor(sf::Color::Black);
+        scoreText1.setOutlineColor(sf::Color::Black);
+    }
+
     while (window.isOpen()) {
         sf::Event e;
         while (window.pollEvent(e)) {
@@ -123,6 +156,25 @@ int main(int argc, char** argv) {
         renderer.draw(window, level);
         r0.draw(window);
         r1.draw(window);
+
+        // Draw HUD scores
+        if (fontLoaded) {
+            scoreText0.setString(std::string("P1: ") + std::to_string(score0));
+            scoreText1.setString(std::string("P2: ") + std::to_string(score1));
+
+            // Normalize origins to top-left of text bounds
+            auto b0 = scoreText0.getLocalBounds();
+            auto b1 = scoreText1.getLocalBounds();
+            scoreText0.setOrigin(b0.left, b0.top);
+            scoreText1.setOrigin(b1.left, b1.top);
+
+            const float margin = 8.f;
+            scoreText0.setPosition(margin, margin);
+            scoreText1.setPosition(window.getSize().x - b1.width - margin, margin);
+
+            window.draw(scoreText0);
+            window.draw(scoreText1);
+        }
         window.display();
     }
 

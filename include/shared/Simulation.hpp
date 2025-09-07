@@ -14,6 +14,12 @@ struct PlayerStateView {
     float     powerTimeLeft{0.f};
 };
 
+enum class ScoreEvent { Pellet, PowerPellet, Ghost };
+
+static constexpr int POINTS_PELLET       = 10;
+static constexpr int POINTS_POWER_PELLET = 50;
+static constexpr int POINTS_GHOST        = 200;
+
 class Simulation {
    public:
     Simulation();
@@ -39,6 +45,9 @@ class Simulation {
     };
     // Moves consumed pellets from the last step into 'out' and clears the internal buffer
     void drainConsumed(std::vector<ConsumedPellet>& out);
+
+    // Award points for a scoring event (e.g., ghost eaten)
+    void award(int playerIndex, ScoreEvent eventType);
 
    private:
     LevelManager level;
