@@ -58,19 +58,21 @@ int main(int argc, char** argv) {
 
     float     p0x = 120.f, p0y = 120.f, p1x = 680.f, p1y = 480.f;
     float     gx0 = 400.f, gy0 = 300.f, gx1 = 400.f, gy1 = 300.f, gx2 = 400.f, gy2 = 300.f, gx3 = 400.f, gy3 = 300.f;
+    Direction gf0 = Direction::Left, gf1 = Direction::Left, gf2 = Direction::Left, gf3 = Direction::Left;
     uint16_t  score0 = 0, score1 = 0;
     bool      pow0 = false, pow1 = false;
     Direction f0 = Direction::Right, f1 = Direction::Left;
 
-    // HUD font and texts
+    // HUD font and texts - try loading from some usual positions
+    // if the env variable is not provided
     sf::Font hudFont;
     bool     fontLoaded = false;
     {
-        // 1) Allow override via env var PACMAN_FONT
+        // allow override via env var PACMAN_FONT
         if (const char* envFont = std::getenv("PACMAN_FONT")) {
             fontLoaded = hudFont.loadFromFile(envFont);
         }
-        // 2) Prefer bundled fonts in assets/fonts (OS-independent)
+        // prefer bundled fonts in assets/fonts (OS-independent)
         if (!fontLoaded) {
             const char* assetFonts[] = {"assets/fonts/DejaVuSans.ttf", "assets/fonts/FreeSans.ttf",
                                         "assets/fonts/OpenSans-Regular.ttf", "assets/fonts/PressStart2P.ttf"};
@@ -81,7 +83,7 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        // 3) Fallback to common Linux/macOS paths if assets missing
+        // fallback to common Linux/macOS paths if assets missing
         if (!fontLoaded) {
             const char* systemFonts[] = {
                 // Linux (Debian/Ubuntu)
@@ -142,9 +144,14 @@ int main(int argc, char** argv) {
                 sf::Uint16 s0, s1;
                 sf::Uint8  pw0, pw1;
                 sf::Uint16 n;
-                // Extend snapshot with 4 ghost positions
+                // Extend snapshot with 4 ghost positions and facings
+                sf::Uint8 tgf0, tgf1, tgf2, tgf3;
                 in >> p0x >> p0y >> s0 >> pw0 >> p1x >> p1y >> s1 >> pw1;
-                in >> gx0 >> gy0 >> gx1 >> gy1 >> gx2 >> gy2 >> gx3 >> gy3;
+                in >> gx0 >> gy0 >> gx1 >> gy1 >> gx2 >> gy2 >> gx3 >> gy3 >> tgf0 >> tgf1 >> tgf2 >> tgf3;
+                gf0 = static_cast<Direction>(tgf0);
+                gf1 = static_cast<Direction>(tgf1);
+                gf2 = static_cast<Direction>(tgf2);
+                gf3 = static_cast<Direction>(tgf3);
                 in >> n;
                 score0 = s0;
                 score1 = s1;
@@ -225,17 +232,11 @@ int main(int argc, char** argv) {
         g1.setFrightened(frightened);
         g2.setFrightened(frightened);
         g3.setFrightened(frightened);
-        // Approximate facing for Clyde from last movement like pacman
-        static float lgx3 = gx3, lgy3 = gy3;
-        float        ddx = gx3 - lgx3, ddy = gy3 - lgy3;
-        if (std::abs(ddx) + std::abs(ddy) > 0.001f) {
-            if (std::abs(ddx) > std::abs(ddy))
-                g3.setFacing(ddx > 0 ? Direction::Right : Direction::Left);
-            else
-                g3.setFacing(ddy > 0 ? Direction::Down : Direction::Up);
-        }
-        lgx3 = gx3;
-        lgy3 = gy3;
+        // server-authoritative ghost facing
+        g0.setFacing(static_cast<Direction>(gf0));
+        g1.setFacing(static_cast<Direction>(gf1));
+        g2.setFacing(static_cast<Direction>(gf2));
+        g3.setFacing(static_cast<Direction>(gf3));
         g0.tick(1.0f / 60.0f, scale);
         g1.tick(1.0f / 60.0f, scale);
         g2.tick(1.0f / 60.0f, scale);

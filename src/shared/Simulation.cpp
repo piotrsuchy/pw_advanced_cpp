@@ -114,7 +114,7 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         } else if (consumed == TileType::PowerPellet) {
             award(idx, ScoreEvent::PowerPellet);
             powerTimer[idx] = 10.0f;  // 10 seconds of power
-            // Frighten all ghosts for the same duration
+            // frighten all ghosts for the same duration
             blinky.setFrightened(10.0f);
             pinky.setFrightened(10.0f);
             inky.setFrightened(10.0f);
@@ -178,5 +178,20 @@ Vec2 Simulation::getGhostPosition(int ghostIndex) const {
             Vec2 v{};
             return v;
         }
+    }
+}
+
+Direction Simulation::getGhostFacing(int ghostIndex) const {
+    switch (ghostIndex) {
+        case 0:
+            return blinky.getFacing();
+        case 1:
+            return pinky.getFacing();
+        case 2:
+            return inky.getFacing();
+        case 3:
+            return clyde.getFacing();
+        default:
+            return Direction::None;
     }
 }

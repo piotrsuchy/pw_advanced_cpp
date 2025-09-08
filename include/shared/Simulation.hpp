@@ -39,7 +39,8 @@ class Simulation {
         return level;
     }
     // Ghost access
-    Vec2 getGhostPosition(int ghostIndex) const;
+    Vec2      getGhostPosition(int ghostIndex) const;
+    Direction getGhostFacing(int ghostIndex) const;
 
     struct ConsumedPellet {
         int      x;

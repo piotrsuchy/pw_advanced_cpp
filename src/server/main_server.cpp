@@ -135,14 +135,19 @@ int main(int argc, char** argv) {
                 auto       s1 = sim.getPlayerState(1);
                 sf::Packet out;
                 // Extend with ghost positions (placeholder until ghost integration added to Simulation state view)
-                auto g0 = sim.getGhostPosition(0);
-                auto g1 = sim.getGhostPosition(1);
-                auto g2 = sim.getGhostPosition(2);
-                auto g3 = sim.getGhostPosition(3);
+                auto g0  = sim.getGhostPosition(0);
+                auto g1  = sim.getGhostPosition(1);
+                auto g2  = sim.getGhostPosition(2);
+                auto g3  = sim.getGhostPosition(3);
+                auto gf0 = sim.getGhostFacing(0);
+                auto gf1 = sim.getGhostFacing(1);
+                auto gf2 = sim.getGhostFacing(2);
+                auto gf3 = sim.getGhostFacing(3);
                 out << std::string("SNAPSHOT") << (float)s0.position.x << (float)s0.position.y << (sf::Uint16)s0.score
                     << (sf::Uint8)(s0.powered ? 1 : 0) << (float)s1.position.x << (float)s1.position.y
                     << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0) << (float)g0.x << (float)g0.y
                     << (float)g1.x << (float)g1.y << (float)g2.x << (float)g2.y << (float)g3.x << (float)g3.y
+                    << (sf::Uint8)gf0 << (sf::Uint8)gf1 << (sf::Uint8)gf2 << (sf::Uint8)gf3
                     << static_cast<sf::Uint16>(deltas.size());
                 for (auto& d : deltas) {
                     out << static_cast<sf::Uint16>(d.x) << static_cast<sf::Uint16>(d.y)
