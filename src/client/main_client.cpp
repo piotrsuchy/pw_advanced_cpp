@@ -150,6 +150,8 @@ int main(int argc, char** argv) {
                             t = TileType::Pellet;
                         else if (tv == 3)
                             t = TileType::PowerPellet;
+                        else if (tv == 4)
+                            t = TileType::Cherry;
                         level.setTile(x, y, t);
                     }
                 }
