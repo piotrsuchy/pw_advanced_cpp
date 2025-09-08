@@ -99,6 +99,7 @@ void GhostBase::update(float dt, const LevelManager& level, float scaledTileSize
         direction = bestDir;
     }
 
+    // slow to 60% of normal speed
     float v = (isFrightened() ? (speed * 0.6f) : speed) * scale;
     switch (direction) {
         case Direction::Up:

@@ -41,6 +41,7 @@ class Simulation {
     // Ghost access
     Vec2      getGhostPosition(int ghostIndex) const;
     Direction getGhostFacing(int ghostIndex) const;
+    bool      isGhostActive(int ghostIndex) const;
 
     struct ConsumedPellet {
         int      x;
@@ -52,6 +53,12 @@ class Simulation {
 
     // Award points for a scoring event (e.g., ghost eaten)
     void award(int playerIndex, ScoreEvent eventType);
+    struct EatenGhostEvent {
+        float x;
+        float y;
+        int   points;
+    };
+    void drainEatenGhosts(std::vector<EatenGhostEvent>& out);
 
    private:
     LevelManager level;
@@ -63,8 +70,15 @@ class Simulation {
     bool         initializedPositions{false};
 
     // Scoring and power status
-    int   score[2]      = {0, 0};
-    float powerTimer[2] = {0.f, 0.f};
+    int   score[2]              = {0, 0};
+    float powerTimer[2]         = {0.f, 0.f};
+    int   frightenedEatCount[2] = {0, 0};
 
-    std::vector<ConsumedPellet> consumedThisTick;
+    // Ghost home (respawn) position in world coords
+    float ghostHomeX{0.f};
+    float ghostHomeY{0.f};
+
+    std::vector<ConsumedPellet>  consumedThisTick;
+    std::vector<EatenGhostEvent> eatenGhostsThisTick;
+    float                        ghostRespawn[4] = {0.f, 0.f, 0.f, 0.f};
 };

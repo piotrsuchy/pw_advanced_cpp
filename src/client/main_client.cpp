@@ -47,10 +47,6 @@ int main(int argc, char** argv) {
     // textures for Clyde
     g3.setDirectionalTextures("assets/textures/ghosts/clyde_up.png", "assets/textures/ghosts/clyde_down.png",
                               "assets/textures/ghosts/clyde_left.png", "assets/textures/ghosts/clyde_right.png");
-    // g0.setBaseColor(sf::Color(255, 0, 0));      // Blinky
-    // g1.setBaseColor(sf::Color(255, 184, 255));  // Pinky
-    // g2.setBaseColor(sf::Color(0, 255, 255));    // Inky
-    // // g3.setBaseColor(sf::Color(255, 184, 82));   // Clyde
 
     InputManager input;
     Direction    lastSent = Direction::None;
@@ -85,12 +81,12 @@ int main(int argc, char** argv) {
         }
         // fallback to common Linux/macOS paths if assets missing
         if (!fontLoaded) {
-            const char* systemFonts[] = {
-                // Linux (Debian/Ubuntu)
-                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
-                // macOS
-                "/Library/Fonts/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
-                "/System/Library/Fonts/Supplemental/Helvetica.ttf", "/System/Library/Fonts/Supplemental/Tahoma.ttf"};
+            const char* systemFonts[] = {"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                                         "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+                                         "/Library/Fonts/Arial.ttf",
+                                         "/System/Library/Fonts/Supplemental/Arial.ttf",
+                                         "/System/Library/Fonts/Supplemental/Helvetica.ttf",
+                                         "/System/Library/Fonts/Supplemental/Tahoma.ttf"};
             for (const char* path : systemFonts) {
                 if (hudFont.loadFromFile(path)) {
                     fontLoaded = true;
@@ -117,6 +113,9 @@ int main(int argc, char** argv) {
         scoreText0.setOutlineColor(sf::Color::Black);
         scoreText1.setOutlineColor(sf::Color::Black);
     }
+
+    // ephemeral score popups (x, y, points, time)
+    std::vector<std::tuple<float, float, int, float>> popups;
 
     while (window.isOpen()) {
         sf::Event e;
@@ -152,7 +151,8 @@ int main(int argc, char** argv) {
                 gf1 = static_cast<Direction>(tgf1);
                 gf2 = static_cast<Direction>(tgf2);
                 gf3 = static_cast<Direction>(tgf3);
-                in >> n;
+                sf::Uint16 ng;
+                in >> n >> ng;
                 score0 = s0;
                 score1 = s1;
                 pow0   = (pw0 != 0);
@@ -162,6 +162,12 @@ int main(int argc, char** argv) {
                     sf::Uint8  t;
                     in >> cx >> cy >> t;
                     if (t == 1 || t == 2) level.setTile(cx, cy, TileType::Empty);
+                }
+                for (sf::Uint16 k = 0; k < ng; ++k) {
+                    float      ex, ey;
+                    sf::Uint16 pts;
+                    in >> ex >> ey >> pts;
+                    popups.emplace_back(ex, ey, (int)pts, 0.f);
                 }
             } else if (kind == "LEVEL") {
                 // Full level sync from server
@@ -269,6 +275,26 @@ int main(int argc, char** argv) {
             window.draw(scoreText0);
             window.draw(scoreText1);
         }
+
+        // Render ephemeral ghost-score popups (float upward and fade out over 1s)
+        for (auto& p : popups) {
+            std::get<1>(p) -= 20.f * (1.0f / 60.0f);
+            std::get<3>(p) += 1.0f / 60.0f;
+        }
+        popups.erase(std::remove_if(popups.begin(), popups.end(), [](auto& p) { return std::get<3>(p) > 1.0f; }),
+                     popups.end());
+        for (auto& p : popups) {
+            sf::Text txt;
+            if (fontLoaded) txt.setFont(hudFont);
+            txt.setCharacterSize(20);
+            txt.setFillColor(sf::Color::White);
+            txt.setOutlineColor(sf::Color::Black);
+            txt.setOutlineThickness(2.f);
+            txt.setString(std::to_string(std::get<2>(p)) + "!");
+            txt.setPosition(std::get<0>(p), std::get<1>(p));
+            window.draw(txt);
+        }
+
         window.display();
     }
 

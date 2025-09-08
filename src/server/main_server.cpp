@@ -125,9 +125,11 @@ int main(int argc, char** argv) {
             lastTick = now;
             sim.step(1.0f / tickHz, scaledTile, scale);
 
-            // Drain pellet deltas for this tick once
+            // Drain pellet and eaten-ghost events for this tick once
             std::vector<Simulation::ConsumedPellet> deltas;
             sim.drainConsumed(deltas);
+            std::vector<Simulation::EatenGhostEvent> ghostScores;
+            sim.drainEatenGhosts(ghostScores);
 
             for (int i = 0; i < 2; ++i) {
                 if (!connected[i]) continue;
@@ -148,10 +150,13 @@ int main(int argc, char** argv) {
                     << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0) << (float)g0.x << (float)g0.y
                     << (float)g1.x << (float)g1.y << (float)g2.x << (float)g2.y << (float)g3.x << (float)g3.y
                     << (sf::Uint8)gf0 << (sf::Uint8)gf1 << (sf::Uint8)gf2 << (sf::Uint8)gf3
-                    << static_cast<sf::Uint16>(deltas.size());
+                    << static_cast<sf::Uint16>(deltas.size()) << static_cast<sf::Uint16>(ghostScores.size());
                 for (auto& d : deltas) {
                     out << static_cast<sf::Uint16>(d.x) << static_cast<sf::Uint16>(d.y)
                         << static_cast<sf::Uint8>(d.type == TileType::PowerPellet ? 2 : 1);
+                }
+                for (auto& ge : ghostScores) {
+                    out << (float)ge.x << (float)ge.y << (sf::Uint16)ge.points;
                 }
                 client[i]->send(out);
             }
