@@ -1,8 +1,8 @@
 #include "graphics/PacmanRenderer.hpp"
 
 PacmanRenderer::PacmanRenderer() {
-    loadedClosed = textureClosed.loadFromFile("assets/textures/pacman_closed.png");
-    hasOpen      = textureOpen.loadFromFile("assets/textures/pacman_open.png");
+    loadedClosed = textureClosed.loadFromFile("assets/textures/pacman/pacman_closed.png");
+    hasOpen      = textureOpen.loadFromFile("assets/textures/pacman/pacman_open.png");
     if (loadedClosed) {
         sprite.setTexture(textureClosed, true);
         auto size = textureClosed.getSize();

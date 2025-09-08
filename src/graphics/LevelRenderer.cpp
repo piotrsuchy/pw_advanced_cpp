@@ -6,26 +6,32 @@
 
 LevelRenderer::LevelRenderer() {
     // Load textures
-    if (!wallTexture.loadFromFile("assets/textures/block2.png")) {
-        std::cerr << "Failed to load block2.png\n";
+    if (!wallTexture.loadFromFile("assets/textures/map/block.png")) {
+        std::cerr << "Failed to load block.png\n";
     } else {
         std::cout << "Wall texture loaded: " << wallTexture.getSize().x << "x" << wallTexture.getSize().y << "\n";
     }
-    if (!pelletTexture.loadFromFile("assets/textures/pellet.png")) {
+    if (!pelletTexture.loadFromFile("assets/textures/map/pellet.png")) {
         std::cerr << "Failed to load pellet.png\n";
     } else {
         std::cout << "Pellet texture loaded: " << pelletTexture.getSize().x << "x" << pelletTexture.getSize().y << "\n";
     }
-    if (!powerPelletTexture.loadFromFile("assets/textures/power_pellet.png")) {
+    if (!powerPelletTexture.loadFromFile("assets/textures/map/power_pellet.png")) {
         std::cerr << "Failed to load power_pellet.png\n";
     } else {
         std::cout << "Power pellet texture loaded: " << powerPelletTexture.getSize().x << "x"
                   << powerPelletTexture.getSize().y << "\n";
     }
+    if (!cherryTexture.loadFromFile("assets/textures/map/cherry.png")) {
+        std::cerr << "Failed to load cherry.png\n";
+    } else {
+        std::cout << "Cherry texture loaded: " << cherryTexture.getSize().x << "x" << cherryTexture.getSize().y << "\n";
+    }
 
     wallSprite.setTexture(wallTexture);
     pelletSprite.setTexture(pelletTexture);
     powerPelletSprite.setTexture(powerPelletTexture);
+    cherrySprite.setTexture(cherryTexture);
 
     // Scale sprites to tileSize
     auto scaleToTileSize = [this](sf::Sprite& sprite) {
@@ -36,6 +42,7 @@ LevelRenderer::LevelRenderer() {
     scaleToTileSize(wallSprite);
     scaleToTileSize(pelletSprite);
     scaleToTileSize(powerPelletSprite);
+    scaleToTileSize(cherrySprite);
 }
 
 void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {
@@ -121,6 +128,9 @@ void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {
                     break;
                 case TileType::PowerPellet:
                     sprite = &powerPelletSprite;
+                    break;
+                case TileType::Cherry:
+                    sprite = &cherrySprite;
                     break;
                 default:
                     break;

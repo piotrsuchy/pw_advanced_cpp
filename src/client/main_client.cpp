@@ -34,13 +34,22 @@ int main(int argc, char** argv) {
     LevelRenderer  renderer;
     PacmanRenderer r0, r1;
     GhostRenderer  g0, g1, g2, g3;
-    // Use textures for Clyde (g3)
-    g3.setDirectionalTextures("assets/textures/clyde_up.png", "assets/textures/clyde_down.png",
-                              "assets/textures/clyde_left.png", "assets/textures/clyde_right.png");
-    g0.setBaseColor(sf::Color(255, 0, 0));      // Blinky
-    g1.setBaseColor(sf::Color(255, 184, 255));  // Pinky
-    g2.setBaseColor(sf::Color(0, 255, 255));    // Inky
-    g3.setBaseColor(sf::Color(255, 184, 82));   // Clyde
+    // textures for Blinky
+    g0.setDirectionalTextures("assets/textures/ghosts/blinky_up.png", "assets/textures/ghosts/blinky_down.png",
+                              "assets/textures/ghosts/blinky_left.png", "assets/textures/ghosts/blinky_right.png");
+    // textures for Pinky
+    g1.setDirectionalTextures("assets/textures/ghosts/pinky_up.png", "assets/textures/ghosts/pinky_down.png",
+                              "assets/textures/ghosts/pinky_left.png", "assets/textures/ghosts/pinky_right.png");
+    // textures for Inky
+    g2.setDirectionalTextures("assets/textures/ghosts/inky_up.png", "assets/textures/ghosts/inky_down.png",
+                              "assets/textures/ghosts/inky_left.png", "assets/textures/ghosts/inky_right.png");
+    // textures for Clyde
+    g3.setDirectionalTextures("assets/textures/ghosts/clyde_up.png", "assets/textures/ghosts/clyde_down.png",
+                              "assets/textures/ghosts/clyde_left.png", "assets/textures/ghosts/clyde_right.png");
+    // g0.setBaseColor(sf::Color(255, 0, 0));      // Blinky
+    // g1.setBaseColor(sf::Color(255, 184, 255));  // Pinky
+    // g2.setBaseColor(sf::Color(0, 255, 255));    // Inky
+    // // g3.setBaseColor(sf::Color(255, 184, 82));   // Clyde
 
     InputManager input;
     Direction    lastSent = Direction::None;
