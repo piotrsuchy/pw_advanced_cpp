@@ -73,6 +73,12 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             }
         }
 
+        // Store spawn positions for players
+        spawnX[0] = players[0].getPosition().x;
+        spawnY[0] = players[0].getPosition().y;
+        spawnX[1] = players[1].getPosition().x;
+        spawnY[1] = players[1].getPosition().y;
+
         // Place ghosts near the center box corners
         float gx = offX + (gridW / 2) * scaledTileSize + scaledTileSize * 0.5f;
         float gy = offY + (gridH / 2) * scaledTileSize + scaledTileSize * 0.5f;
@@ -86,8 +92,50 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         initializedPositions = true;
     }
 
-    players[0].update(dt, level, scaledTileSize, scale);
-    players[1].update(dt, level, scaledTileSize, scale);
+    // Lethal collisions when ghosts are not frightened
+    auto lethalCollide = [&](int playerIdx, Vec2 ppos, Vec2 gpos, bool ghostFrightened) {
+        if (ghostFrightened) return;
+        if (deathTimer[playerIdx] > 0.f) return;
+        float radius = scaledTileSize * 0.5f * 0.8f;
+        float dx     = ppos.x - gpos.x;
+        float dy     = ppos.y - gpos.y;
+        if (dx * dx + dy * dy <= radius * radius) {
+            // kill player
+            lives[playerIdx]      = std::max(0, lives[playerIdx] - 1);
+            deathTimer[playerIdx] = 3.0f;  // freeze 3s for animation on client
+            // respawn at end of timer
+            if (lives[playerIdx] == 0) {
+                gameOver = true;
+            }
+        }
+    };
+
+    // Check lethal collisions against all ghosts
+    Vec2 p0pos = players[0].getPosition();
+    Vec2 p1pos = players[1].getPosition();
+    lethalCollide(0, p0pos, blinky.getPosition(), blinky.isFrightened());
+    lethalCollide(0, p0pos, pinky.getPosition(), pinky.isFrightened());
+    lethalCollide(0, p0pos, inky.getPosition(), inky.isFrightened());
+    lethalCollide(0, p0pos, clyde.getPosition(), clyde.isFrightened());
+    lethalCollide(1, p1pos, blinky.getPosition(), blinky.isFrightened());
+    lethalCollide(1, p1pos, pinky.getPosition(), pinky.isFrightened());
+    lethalCollide(1, p1pos, inky.getPosition(), inky.isFrightened());
+    lethalCollide(1, p1pos, clyde.getPosition(), clyde.isFrightened());
+
+    // Tick death timers and respawn players
+    for (int i = 0; i < 2; ++i) {
+        if (deathTimer[i] > 0.f) {
+            deathTimer[i] -= dt;
+            if (deathTimer[i] <= 0.f) {
+                players[i].setPosition(spawnX[i], spawnY[i]);
+                // clear power for that player
+                powerTimer[i] = 0.f;
+            }
+        }
+    }
+
+    if (deathTimer[0] <= 0.f) players[0].update(dt, level, scaledTileSize, scale);
+    if (deathTimer[1] <= 0.f) players[1].update(dt, level, scaledTileSize, scale);
     // Update ghosts
     auto p0                  = players[0].getPosition();
     auto p1                  = players[1].getPosition();
@@ -141,8 +189,8 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             if (powerTimer[idx] < 0.f) powerTimer[idx] = 0.f;
         }
     };
-    handlePlayer(0);
-    handlePlayer(1);
+    if (deathTimer[0] <= 0.f) handlePlayer(0);
+    if (deathTimer[1] <= 0.f) handlePlayer(1);
 
     // Handle collisions between players and ghosts
     auto collideCircle = [](Vec2 p, Vec2 g, float radius) {
@@ -231,6 +279,8 @@ PlayerStateView Simulation::getPlayerState(int playerIndex) const {
     v.score         = score[playerIndex];
     v.powered       = powerTimer[playerIndex] > 0.f;
     v.powerTimeLeft = powerTimer[playerIndex];
+    v.livesLeft     = lives[playerIndex];
+    v.deathTimeLeft = deathTimer[playerIndex];
     return v;
 }
 

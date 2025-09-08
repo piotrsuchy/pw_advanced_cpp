@@ -3,6 +3,7 @@
 PacmanRenderer::PacmanRenderer() {
     loadedClosed = textureClosed.loadFromFile("assets/textures/pacman/pacman_closed.png");
     hasOpen      = textureOpen.loadFromFile("assets/textures/pacman/pacman_open.png");
+    // Load death frames lazily on first use in setDeathTimeLeft to avoid startup cost
     if (loadedClosed) {
         sprite.setTexture(textureClosed, true);
         auto size = textureClosed.getSize();
@@ -42,6 +43,31 @@ void PacmanRenderer::tick(float dt, bool isMoving, float scale) {
     }
     sprite.setScale(scale, scale);
 
+    if (deathTimeLeft > 0.f) {
+        // 8 frames over 3 seconds
+        float total   = 3.0f;
+        int   frames  = 8;
+        float elapsed = total - deathTimeLeft;
+        int   idx     = std::min(frames - 1, std::max(0, (int)std::floor((elapsed / total) * frames)));
+        if (!deathLoaded) {
+            // selected some of the better frames for the dying animation
+            const char* paths[8] = {"assets/textures/pacman/dying_2.png",  "assets/textures/pacman/dying_3.png",
+                                    "assets/textures/pacman/dying_4.png",  "assets/textures/pacman/dying_6.png",
+                                    "assets/textures/pacman/dying_8.png",  "assets/textures/pacman/dying_9.png",
+                                    "assets/textures/pacman/dying_10.png", "assets/textures/pacman/dying_11.png"};
+            bool        ok       = true;
+            for (int i = 0; i < frames; ++i) ok &= deathFrames[i].loadFromFile(paths[i]);
+            deathLoaded = ok;
+        }
+        if (deathLoaded) {
+            sprite.setTexture(deathFrames[idx], true);
+        } else {
+            sprite.setTexture(textureClosed, true);
+        }
+        // Do not animate mouth while dying
+        return;
+    }
+
     if (isMoving) {
         timer += dt;
         if (timer >= interval) {
@@ -62,4 +88,8 @@ void PacmanRenderer::tick(float dt, bool isMoving, float scale) {
 
 void PacmanRenderer::draw(sf::RenderWindow& window) {
     window.draw(sprite);
+}
+
+void PacmanRenderer::setDeathTimeLeft(float t) {
+    deathTimeLeft = t;
 }

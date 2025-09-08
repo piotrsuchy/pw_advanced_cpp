@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     Simulation sim;
     sim.initLevel(1);
 
-    // Derive consistent scaledTileSize/scale like client renderer (roughly)
+    // derive consistent scaledTileSize/scale like client renderer (roughly)
     const int gridW      = sim.getLevel().getWidth();
     const int gridH      = sim.getLevel().getHeight();
     float     scaleX     = WINDOW_W / (gridW * 64.f);
@@ -124,6 +124,10 @@ int main(int argc, char** argv) {
         if (now - lastTick >= step) {
             lastTick = now;
             sim.step(1.0f / tickHz, scaledTile, scale);
+            if (sim.isGameOver()) {
+                std::cout << "[SERVER] Game over. Exiting." << std::endl;
+                std::exit(0);
+            }
 
             // Drain pellet and eaten-ghost events for this tick once
             std::vector<Simulation::ConsumedPellet> deltas;
@@ -146,11 +150,13 @@ int main(int argc, char** argv) {
                 auto gf2 = sim.getGhostFacing(2);
                 auto gf3 = sim.getGhostFacing(3);
                 out << std::string("SNAPSHOT") << (float)s0.position.x << (float)s0.position.y << (sf::Uint16)s0.score
-                    << (sf::Uint8)(s0.powered ? 1 : 0) << (float)s1.position.x << (float)s1.position.y
-                    << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0) << (float)g0.x << (float)g0.y
-                    << (float)g1.x << (float)g1.y << (float)g2.x << (float)g2.y << (float)g3.x << (float)g3.y
-                    << (sf::Uint8)gf0 << (sf::Uint8)gf1 << (sf::Uint8)gf2 << (sf::Uint8)gf3
-                    << static_cast<sf::Uint16>(deltas.size()) << static_cast<sf::Uint16>(ghostScores.size());
+                    << (sf::Uint8)(s0.powered ? 1 : 0) << (sf::Uint8)s0.livesLeft << (float)s0.deathTimeLeft
+                    << (float)s1.position.x << (float)s1.position.y << (sf::Uint16)s1.score
+                    << (sf::Uint8)(s1.powered ? 1 : 0) << (sf::Uint8)s1.livesLeft << (float)s1.deathTimeLeft
+                    << (float)g0.x << (float)g0.y << (float)g1.x << (float)g1.y << (float)g2.x << (float)g2.y
+                    << (float)g3.x << (float)g3.y << (sf::Uint8)gf0 << (sf::Uint8)gf1 << (sf::Uint8)gf2
+                    << (sf::Uint8)gf3 << static_cast<sf::Uint16>(deltas.size())
+                    << static_cast<sf::Uint16>(ghostScores.size());
                 for (auto& d : deltas) {
                     out << static_cast<sf::Uint16>(d.x) << static_cast<sf::Uint16>(d.y)
                         << static_cast<sf::Uint8>(d.type == TileType::PowerPellet ? 2 : 1);

@@ -145,7 +145,9 @@ int main(int argc, char** argv) {
                 sf::Uint16 n;
                 // Extend snapshot with 4 ghost positions and facings
                 sf::Uint8 tgf0, tgf1, tgf2, tgf3;
-                in >> p0x >> p0y >> s0 >> pw0 >> p1x >> p1y >> s1 >> pw1;
+                sf::Uint8 l0, l1;
+                float     dt0, dt1;
+                in >> p0x >> p0y >> s0 >> pw0 >> l0 >> dt0 >> p1x >> p1y >> s1 >> pw1 >> l1 >> dt1;
                 in >> gx0 >> gy0 >> gx1 >> gy1 >> gx2 >> gy2 >> gx3 >> gy3 >> tgf0 >> tgf1 >> tgf2 >> tgf3;
                 gf0 = static_cast<Direction>(tgf0);
                 gf1 = static_cast<Direction>(tgf1);
@@ -157,6 +159,11 @@ int main(int argc, char** argv) {
                 score1 = s1;
                 pow0   = (pw0 != 0);
                 pow1   = (pw1 != 0);
+                // Lives and death timers (client could show HUD or trigger animation)
+                int   lives0 = l0, lives1 = l1;
+                float dead0 = dt0, dead1 = dt1;
+                r0.setDeathTimeLeft(dead0);
+                r1.setDeathTimeLeft(dead1);
                 for (sf::Uint16 k = 0; k < n; ++k) {
                     sf::Uint16 cx, cy;
                     sf::Uint8  t;
