@@ -65,6 +65,23 @@ int main(int argc, char** argv) {
                         connected[freeIdx] = true;
                         selector.add(*client[freeIdx]);
                         std::cout << "[SERVER] Client connected in slot " << freeIdx << std::endl;
+
+                        // Send full level state immediately to sync client with server
+                        sf::Packet levelPkt;
+                        levelPkt << std::string("LEVEL");
+                        const int w = sim.getLevel().getWidth();
+                        const int h = sim.getLevel().getHeight();
+                        levelPkt << static_cast<sf::Uint16>(w) << static_cast<sf::Uint16>(h);
+                        for (int y = 0; y < h; ++y) {
+                            for (int x = 0; x < w; ++x) {
+                                auto t = sim.getLevel().getTile(x, y);
+                                levelPkt << static_cast<sf::Uint8>(
+                                    t == TileType::PowerPellet
+                                        ? 3
+                                        : (t == TileType::Pellet ? 2 : (t == TileType::Wall ? 1 : 0)));
+                            }
+                        }
+                        client[freeIdx]->send(levelPkt);
                     } else {
                         sock->disconnect();
                     }
@@ -111,9 +128,15 @@ int main(int argc, char** argv) {
                 auto       s0 = sim.getPlayerState(0);
                 auto       s1 = sim.getPlayerState(1);
                 sf::Packet out;
+                // Extend with ghost positions (placeholder until ghost integration added to Simulation state view)
+                auto g0 = sim.getGhostPosition(0);
+                auto g1 = sim.getGhostPosition(1);
+                auto g2 = sim.getGhostPosition(2);
+                auto g3 = sim.getGhostPosition(3);
                 out << std::string("SNAPSHOT") << (float)s0.position.x << (float)s0.position.y << (sf::Uint16)s0.score
                     << (sf::Uint8)(s0.powered ? 1 : 0) << (float)s1.position.x << (float)s1.position.y
-                    << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0)
+                    << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0) << (float)g0.x << (float)g0.y
+                    << (float)g1.x << (float)g1.y << (float)g2.x << (float)g2.y << (float)g3.x << (float)g3.y
                     << static_cast<sf::Uint16>(deltas.size());
                 for (auto& d : deltas) {
                     out << static_cast<sf::Uint16>(d.x) << static_cast<sf::Uint16>(d.y)

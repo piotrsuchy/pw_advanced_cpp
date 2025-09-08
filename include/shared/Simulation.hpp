@@ -4,6 +4,7 @@
 
 #include "core/LevelManager.hpp"
 #include "shared/GameTypes.hpp"
+#include "shared/GhostLogic.hpp"
 #include "shared/PacmanLogic.hpp"
 
 struct PlayerStateView {
@@ -13,6 +14,12 @@ struct PlayerStateView {
     bool      powered{false};
     float     powerTimeLeft{0.f};
 };
+
+enum class ScoreEvent { Pellet, PowerPellet, Ghost };
+
+static constexpr int POINTS_PELLET       = 10;
+static constexpr int POINTS_POWER_PELLET = 50;
+static constexpr int POINTS_GHOST        = 200;
 
 class Simulation {
    public:
@@ -31,6 +38,8 @@ class Simulation {
     const LevelManager& getLevel() const {
         return level;
     }
+    // Ghost access
+    Vec2 getGhostPosition(int ghostIndex) const;
 
     struct ConsumedPellet {
         int      x;
@@ -40,9 +49,16 @@ class Simulation {
     // Moves consumed pellets from the last step into 'out' and clears the internal buffer
     void drainConsumed(std::vector<ConsumedPellet>& out);
 
+    // Award points for a scoring event (e.g., ghost eaten)
+    void award(int playerIndex, ScoreEvent eventType);
+
    private:
     LevelManager level;
     PacmanLogic  players[2];
+    Blinky       blinky;
+    Pinky        pinky;
+    Inky         inky;
+    Clyde        clyde;
     bool         initializedPositions{false};
 
     // Scoring and power status

@@ -1,5 +1,8 @@
 #include "shared/Simulation.hpp"
 
+#include <cmath>
+#include <iostream>
+
 Simulation::Simulation() {}
 
 void Simulation::initLevel(int levelNumber) {
@@ -70,11 +73,26 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             }
         }
 
+        // Place ghosts near the center box corners
+        float gx = offX + (gridW / 2) * scaledTileSize + scaledTileSize * 0.5f;
+        float gy = offY + (gridH / 2) * scaledTileSize + scaledTileSize * 0.5f;
+        blinky.setPosition(gx - 2 * scaledTileSize, gy);
+        pinky.setPosition(gx + 2 * scaledTileSize, gy);
+        inky.setPosition(gx, gy - 2 * scaledTileSize);
+        clyde.setPosition(gx, gy + 2 * scaledTileSize);
+
         initializedPositions = true;
     }
 
     players[0].update(dt, level, scaledTileSize, scale);
     players[1].update(dt, level, scaledTileSize, scale);
+    // Update ghosts
+    auto p0 = players[0].getPosition();
+    auto p1 = players[1].getPosition();
+    blinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    pinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    inky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    clyde.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
 
     // collected pellet deltas for this tick
     consumedThisTick.clear();
@@ -91,10 +109,10 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         int         curY     = static_cast<int>(std::floor((p.y - offY) / scaledTileSize));
         TileType    consumed = level.collectPelletTyped(curX, curY);
         if (consumed == TileType::Pellet) {
-            score[idx] += 1;
+            award(idx, ScoreEvent::Pellet);
             consumedThisTick.push_back({curX, curY, consumed});
         } else if (consumed == TileType::PowerPellet) {
-            score[idx] += 1;
+            award(idx, ScoreEvent::PowerPellet);
             powerTimer[idx] = 10.0f;  // 10 seconds of power
             consumedThisTick.push_back({curX, curY, consumed});
         }
@@ -122,4 +140,38 @@ PlayerStateView Simulation::getPlayerState(int playerIndex) const {
 void Simulation::drainConsumed(std::vector<ConsumedPellet>& out) {
     out = std::move(consumedThisTick);
     consumedThisTick.clear();
+}
+
+void Simulation::award(int playerIndex, ScoreEvent eventType) {
+    if (playerIndex < 0 || playerIndex > 1) return;
+    switch (eventType) {
+        case ScoreEvent::Pellet:
+            score[playerIndex] += POINTS_PELLET;
+            break;
+        case ScoreEvent::PowerPellet:
+            score[playerIndex] += POINTS_POWER_PELLET;
+            break;
+        case ScoreEvent::Ghost:
+            score[playerIndex] += POINTS_GHOST;
+            break;
+        default:
+            break;
+    }
+}
+
+Vec2 Simulation::getGhostPosition(int ghostIndex) const {
+    switch (ghostIndex) {
+        case 0:
+            return blinky.getPosition();
+        case 1:
+            return pinky.getPosition();
+        case 2:
+            return inky.getPosition();
+        case 3:
+            return clyde.getPosition();
+        default: {
+            Vec2 v{};
+            return v;
+        }
+    }
 }

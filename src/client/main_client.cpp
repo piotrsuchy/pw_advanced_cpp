@@ -4,6 +4,7 @@
 
 #include "core/InputManager.hpp"
 #include "core/LevelManager.hpp"
+#include "graphics/GhostRenderer.hpp"
 #include "graphics/LevelRenderer.hpp"
 #include "graphics/PacmanRenderer.hpp"
 
@@ -32,15 +33,57 @@ int main(int argc, char** argv) {
     level.loadLevel(1);
     LevelRenderer  renderer;
     PacmanRenderer r0, r1;
+    GhostRenderer  g0, g1, g2, g3;
+    // Use textures for Clyde (g3)
+    g3.setDirectionalTextures("assets/textures/clyde_up.png", "assets/textures/clyde_down.png",
+                              "assets/textures/clyde_left.png", "assets/textures/clyde_right.png");
+    g0.setBaseColor(sf::Color(255, 0, 0));      // Blinky
+    g1.setBaseColor(sf::Color(255, 184, 255));  // Pinky
+    g2.setBaseColor(sf::Color(0, 255, 255));    // Inky
+    g3.setBaseColor(sf::Color(255, 184, 82));   // Clyde
 
     InputManager input;
     Direction    lastSent = Direction::None;
     sf::Uint32   seq      = 0;
 
     float     p0x = 120.f, p0y = 120.f, p1x = 680.f, p1y = 480.f;
+    float     gx0 = 400.f, gy0 = 300.f, gx1 = 400.f, gy1 = 300.f, gx2 = 400.f, gy2 = 300.f, gx3 = 400.f, gy3 = 300.f;
     uint16_t  score0 = 0, score1 = 0;
     bool      pow0 = false, pow1 = false;
     Direction f0 = Direction::Right, f1 = Direction::Left;
+
+    // HUD font and texts
+    sf::Font hudFont;
+    bool     fontLoaded = false;
+    {
+        const char* fontCandidates[] = {"/Library/Fonts/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
+                                        "/System/Library/Fonts/Supplemental/Helvetica.ttf",
+                                        "/System/Library/Fonts/Supplemental/Tahoma.ttf",
+                                        "/System/Library/Fonts/Supplemental/DejaVuSans.ttf"};
+        for (const char* path : fontCandidates) {
+            if (hudFont.loadFromFile(path)) {
+                fontLoaded = true;
+                break;
+            }
+        }
+        if (!fontLoaded) {
+            std::cerr << "[CLIENT] Warning: Could not load a system font. Scores will not be drawn.\n";
+        }
+    }
+    sf::Text scoreText0;
+    sf::Text scoreText1;
+    if (fontLoaded) {
+        scoreText0.setFont(hudFont);
+        scoreText1.setFont(hudFont);
+        scoreText0.setCharacterSize(24);
+        scoreText1.setCharacterSize(24);
+        scoreText0.setFillColor(sf::Color(255, 255, 0));  // yellow-ish for P1
+        scoreText1.setFillColor(sf::Color(0, 200, 255));  // cyan-ish for P2
+        scoreText0.setOutlineThickness(2.f);
+        scoreText1.setOutlineThickness(2.f);
+        scoreText0.setOutlineColor(sf::Color::Black);
+        scoreText1.setOutlineColor(sf::Color::Black);
+    }
 
     while (window.isOpen()) {
         sf::Event e;
@@ -68,7 +111,10 @@ int main(int argc, char** argv) {
                 sf::Uint16 s0, s1;
                 sf::Uint8  pw0, pw1;
                 sf::Uint16 n;
-                in >> p0x >> p0y >> s0 >> pw0 >> p1x >> p1y >> s1 >> pw1 >> n;
+                // Extend snapshot with 4 ghost positions
+                in >> p0x >> p0y >> s0 >> pw0 >> p1x >> p1y >> s1 >> pw1;
+                in >> gx0 >> gy0 >> gx1 >> gy1 >> gx2 >> gy2 >> gx3 >> gy3;
+                in >> n;
                 score0 = s0;
                 score1 = s1;
                 pow0   = (pw0 != 0);
@@ -78,6 +124,25 @@ int main(int argc, char** argv) {
                     sf::Uint8  t;
                     in >> cx >> cy >> t;
                     if (t == 1 || t == 2) level.setTile(cx, cy, TileType::Empty);
+                }
+            } else if (kind == "LEVEL") {
+                // Full level sync from server
+                sf::Uint16 w, h;
+                in >> w >> h;
+                // Rebuild level grid from packet tiles
+                for (int y = 0; y < static_cast<int>(h); ++y) {
+                    for (int x = 0; x < static_cast<int>(w); ++x) {
+                        sf::Uint8 tv;
+                        in >> tv;
+                        TileType t = TileType::Empty;
+                        if (tv == 1)
+                            t = TileType::Wall;
+                        else if (tv == 2)
+                            t = TileType::Pellet;
+                        else if (tv == 3)
+                            t = TileType::PowerPellet;
+                        level.setTile(x, y, t);
+                    }
                 }
             }
         }
@@ -118,11 +183,53 @@ int main(int argc, char** argv) {
         r1.setFacing(f1);
         r1.setPosition(p1x, p1y);
         r1.tick(1.0f / 60.0f, moving1, scale);
+        g0.setPosition(gx0, gy0);
+        g1.setPosition(gx1, gy1);
+        g2.setPosition(gx2, gy2);
+        g3.setPosition(gx3, gy3);
+        // Approximate facing for Clyde from last movement like pacman
+        static float lgx3 = gx3, lgy3 = gy3;
+        float        ddx = gx3 - lgx3, ddy = gy3 - lgy3;
+        if (std::abs(ddx) + std::abs(ddy) > 0.001f) {
+            if (std::abs(ddx) > std::abs(ddy))
+                g3.setFacing(ddx > 0 ? Direction::Right : Direction::Left);
+            else
+                g3.setFacing(ddy > 0 ? Direction::Down : Direction::Up);
+        }
+        lgx3 = gx3;
+        lgy3 = gy3;
+        g0.tick(1.0f / 60.0f, scale);
+        g1.tick(1.0f / 60.0f, scale);
+        g2.tick(1.0f / 60.0f, scale);
+        g3.tick(1.0f / 60.0f, scale);
 
         window.clear(sf::Color::Black);
         renderer.draw(window, level);
         r0.draw(window);
         r1.draw(window);
+        g0.draw(window);
+        g1.draw(window);
+        g2.draw(window);
+        g3.draw(window);
+
+        // Draw HUD scores
+        if (fontLoaded) {
+            scoreText0.setString(std::string("P1: ") + std::to_string(score0));
+            scoreText1.setString(std::string("P2: ") + std::to_string(score1));
+
+            // Normalize origins to top-left of text bounds
+            auto b0 = scoreText0.getLocalBounds();
+            auto b1 = scoreText1.getLocalBounds();
+            scoreText0.setOrigin(b0.left, b0.top);
+            scoreText1.setOrigin(b1.left, b1.top);
+
+            const float margin = 8.f;
+            scoreText0.setPosition(margin, margin);
+            scoreText1.setPosition(window.getSize().x - b1.width - margin, margin);
+
+            window.draw(scoreText0);
+            window.draw(scoreText1);
+        }
         window.display();
     }
 
