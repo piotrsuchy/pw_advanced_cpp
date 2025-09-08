@@ -74,11 +74,17 @@ int main(int argc, char** argv) {
                         levelPkt << static_cast<sf::Uint16>(w) << static_cast<sf::Uint16>(h);
                         for (int y = 0; y < h; ++y) {
                             for (int x = 0; x < w; ++x) {
-                                auto t = sim.getLevel().getTile(x, y);
-                                levelPkt << static_cast<sf::Uint8>(
-                                    t == TileType::PowerPellet
-                                        ? 3
-                                        : (t == TileType::Pellet ? 2 : (t == TileType::Wall ? 1 : 0)));
+                                auto      t = sim.getLevel().getTile(x, y);
+                                sf::Uint8 v = 0;
+                                if (t == TileType::Wall)
+                                    v = 1;
+                                else if (t == TileType::Pellet)
+                                    v = 2;
+                                else if (t == TileType::PowerPellet)
+                                    v = 3;
+                                else if (t == TileType::Cherry)
+                                    v = 4;
+                                levelPkt << v;
                             }
                         }
                         client[freeIdx]->send(levelPkt);

@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Network.hpp>
+#include <cstdlib>
 #include <iostream>
 
 #include "core/InputManager.hpp"
@@ -65,18 +66,39 @@ int main(int argc, char** argv) {
     sf::Font hudFont;
     bool     fontLoaded = false;
     {
-        const char* fontCandidates[] = {"/Library/Fonts/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
-                                        "/System/Library/Fonts/Supplemental/Helvetica.ttf",
-                                        "/System/Library/Fonts/Supplemental/Tahoma.ttf",
-                                        "/System/Library/Fonts/Supplemental/DejaVuSans.ttf"};
-        for (const char* path : fontCandidates) {
-            if (hudFont.loadFromFile(path)) {
-                fontLoaded = true;
-                break;
+        // 1) Allow override via env var PACMAN_FONT
+        if (const char* envFont = std::getenv("PACMAN_FONT")) {
+            fontLoaded = hudFont.loadFromFile(envFont);
+        }
+        // 2) Prefer bundled fonts in assets/fonts (OS-independent)
+        if (!fontLoaded) {
+            const char* assetFonts[] = {"assets/fonts/DejaVuSans.ttf", "assets/fonts/FreeSans.ttf",
+                                        "assets/fonts/OpenSans-Regular.ttf", "assets/fonts/PressStart2P.ttf"};
+            for (const char* path : assetFonts) {
+                if (hudFont.loadFromFile(path)) {
+                    fontLoaded = true;
+                    break;
+                }
+            }
+        }
+        // 3) Fallback to common Linux/macOS paths if assets missing
+        if (!fontLoaded) {
+            const char* systemFonts[] = {
+                // Linux (Debian/Ubuntu)
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+                // macOS
+                "/Library/Fonts/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
+                "/System/Library/Fonts/Supplemental/Helvetica.ttf", "/System/Library/Fonts/Supplemental/Tahoma.ttf"};
+            for (const char* path : systemFonts) {
+                if (hudFont.loadFromFile(path)) {
+                    fontLoaded = true;
+                    break;
+                }
             }
         }
         if (!fontLoaded) {
-            std::cerr << "[CLIENT] Warning: Could not load a system font. Scores will not be drawn.\n";
+            std::cerr << "[CLIENT] Warning: Could not load a font (set PACMAN_FONT or add assets/fonts/*.ttf)."
+                      << std::endl;
         }
     }
     sf::Text scoreText0;
@@ -198,6 +220,11 @@ int main(int argc, char** argv) {
         g1.setPosition(gx1, gy1);
         g2.setPosition(gx2, gy2);
         g3.setPosition(gx3, gy3);
+        bool frightened = pow0 || pow1;
+        g0.setFrightened(frightened);
+        g1.setFrightened(frightened);
+        g2.setFrightened(frightened);
+        g3.setFrightened(frightened);
         // Approximate facing for Clyde from last movement like pacman
         static float lgx3 = gx3, lgy3 = gy3;
         float        ddx = gx3 - lgx3, ddy = gy3 - lgy3;

@@ -114,6 +114,11 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         } else if (consumed == TileType::PowerPellet) {
             award(idx, ScoreEvent::PowerPellet);
             powerTimer[idx] = 10.0f;  // 10 seconds of power
+            // Frighten all ghosts for the same duration
+            blinky.setFrightened(10.0f);
+            pinky.setFrightened(10.0f);
+            inky.setFrightened(10.0f);
+            clyde.setFrightened(10.0f);
             consumedThisTick.push_back({curX, curY, consumed});
         }
         if (powerTimer[idx] > 0.f) {

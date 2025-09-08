@@ -44,7 +44,24 @@ void GhostRenderer::tick(float, float scale) {
 }
 
 void GhostRenderer::draw(sf::RenderWindow& window) {
+    static sf::Texture fright1, fright2;
+    static bool        frightLoaded = false;
+    static float       frightTimer  = 0.f;
+
+    if (!frightLoaded) {
+        frightLoaded = fright1.loadFromFile("assets/textures/ghosts/ghosts_power_pellet_1.png") &&
+                       fright2.loadFromFile("assets/textures/ghosts/ghosts_power_pellet_2.png");
+    }
+
     if (hasTextures) {
+        if (frightened && frightLoaded) {
+            // Alternate 8 times per second
+            frightTimer += 0.016f;
+            const sf::Texture& ft = ((static_cast<int>(frightTimer * 8) % 2) == 0) ? fright1 : fright2;
+            sprite.setTexture(ft, true);
+            window.draw(sprite);
+            return;
+        }
         // Pick texture based on direction
         switch (facing) {
             case Direction::Up:
