@@ -89,12 +89,20 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     players[0].update(dt, level, scaledTileSize, scale);
     players[1].update(dt, level, scaledTileSize, scale);
     // Update ghosts
-    auto p0 = players[0].getPosition();
-    auto p1 = players[1].getPosition();
-    blinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
-    pinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
-    inky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
-    clyde.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    auto p0                  = players[0].getPosition();
+    auto p1                  = players[1].getPosition();
+    auto updateGhostIfActive = [&](GhostBase& g, int idx) {
+        if (ghostRespawn[idx] > 0.f) {
+            // Keep at home and not frightened while waiting
+            g.setFrightened(0.f);
+            return;
+        }
+        g.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    };
+    updateGhostIfActive(blinky, 0);
+    updateGhostIfActive(pinky, 1);
+    updateGhostIfActive(inky, 2);
+    updateGhostIfActive(clyde, 3);
 
     // collected pellet deltas for this tick
     consumedThisTick.clear();
@@ -123,6 +131,9 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             clyde.setFrightened(10.0f);
             frightenedEatCount[0] = 0;
             frightenedEatCount[1] = 0;
+            consumedThisTick.push_back({curX, curY, consumed});
+        } else if (consumed == TileType::Cherry) {
+            award(idx, ScoreEvent::Cherry);
             consumedThisTick.push_back({curX, curY, consumed});
         }
         if (powerTimer[idx] > 0.f) {
@@ -245,6 +256,9 @@ void Simulation::award(int playerIndex, ScoreEvent eventType) {
         case ScoreEvent::Ghost:
             score[playerIndex] += POINTS_GHOST;
             break;
+        case ScoreEvent::Cherry:
+            score[playerIndex] += POINTS_CHERRY;
+            break;
         default:
             break;
     }
@@ -280,4 +294,9 @@ Direction Simulation::getGhostFacing(int ghostIndex) const {
         default:
             return Direction::None;
     }
+}
+
+bool Simulation::isGhostActive(int ghostIndex) const {
+    if (ghostIndex < 0 || ghostIndex > 3) return false;
+    return ghostRespawn[ghostIndex] <= 0.f;
 }

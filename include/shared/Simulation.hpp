@@ -15,11 +15,12 @@ struct PlayerStateView {
     float     powerTimeLeft{0.f};
 };
 
-enum class ScoreEvent { Pellet, PowerPellet, Ghost };
+enum class ScoreEvent { Pellet, PowerPellet, Ghost, Cherry };
 
 static constexpr int POINTS_PELLET       = 10;
 static constexpr int POINTS_POWER_PELLET = 50;
 static constexpr int POINTS_GHOST        = 200;
+static constexpr int POINTS_CHERRY       = 100;  // classic Pac-Man fruit value for Cherry
 
 class Simulation {
    public:
