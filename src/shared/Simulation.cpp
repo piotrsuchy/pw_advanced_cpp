@@ -80,6 +80,8 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         pinky.setPosition(gx + 2 * scaledTileSize, gy);
         inky.setPosition(gx, gy - 2 * scaledTileSize);
         clyde.setPosition(gx, gy + 2 * scaledTileSize);
+        ghostHomeX = gx;
+        ghostHomeY = gy - 2 * scaledTileSize;  // inky initial spot as home
 
         initializedPositions = true;
     }
@@ -87,12 +89,20 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     players[0].update(dt, level, scaledTileSize, scale);
     players[1].update(dt, level, scaledTileSize, scale);
     // Update ghosts
-    auto p0 = players[0].getPosition();
-    auto p1 = players[1].getPosition();
-    blinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
-    pinky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
-    inky.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
-    clyde.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    auto p0                  = players[0].getPosition();
+    auto p1                  = players[1].getPosition();
+    auto updateGhostIfActive = [&](GhostBase& g, int idx) {
+        if (ghostRespawn[idx] > 0.f) {
+            // Keep at home and not frightened while waiting
+            g.setFrightened(0.f);
+            return;
+        }
+        g.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
+    };
+    updateGhostIfActive(blinky, 0);
+    updateGhostIfActive(pinky, 1);
+    updateGhostIfActive(inky, 2);
+    updateGhostIfActive(clyde, 3);
 
     // collected pellet deltas for this tick
     consumedThisTick.clear();
@@ -114,6 +124,16 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         } else if (consumed == TileType::PowerPellet) {
             award(idx, ScoreEvent::PowerPellet);
             powerTimer[idx] = 10.0f;  // 10 seconds of power
+            // frighten all ghosts for the same duration
+            blinky.setFrightened(10.0f);
+            pinky.setFrightened(10.0f);
+            inky.setFrightened(10.0f);
+            clyde.setFrightened(10.0f);
+            frightenedEatCount[0] = 0;
+            frightenedEatCount[1] = 0;
+            consumedThisTick.push_back({curX, curY, consumed});
+        } else if (consumed == TileType::Cherry) {
+            award(idx, ScoreEvent::Cherry);
             consumedThisTick.push_back({curX, curY, consumed});
         }
         if (powerTimer[idx] > 0.f) {
@@ -123,6 +143,83 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     };
     handlePlayer(0);
     handlePlayer(1);
+
+    // Handle collisions between players and ghosts
+    auto collideCircle = [](Vec2 p, Vec2 g, float radius) {
+        float dx = p.x - g.x;
+        float dy = p.y - g.y;
+        return (dx * dx + dy * dy) <= (radius * radius);
+    };
+    auto handleGhostEaten = [&](int playerIdx, int ghostIdx) {
+        // Points escalate per frightened session for that player
+        static const int values[] = {100, 200, 400, 800, 1600};
+        int&             count    = frightenedEatCount[playerIdx];
+        int              pts      = values[std::min(count, 4)];
+        score[playerIdx] += pts;
+        count++;
+        // Respawn ghost at home spot
+        switch (ghostIdx) {
+            case 0:
+                blinky.setPosition(ghostHomeX, ghostHomeY);
+                blinky.setFrightened(0.f);
+                ghostRespawn[0] = 5.0f;
+                break;
+            case 1:
+                pinky.setPosition(ghostHomeX, ghostHomeY);
+                pinky.setFrightened(0.f);
+                ghostRespawn[1] = 5.0f;
+                break;
+            case 2:
+                inky.setPosition(ghostHomeX, ghostHomeY);
+                inky.setFrightened(0.f);
+                ghostRespawn[2] = 5.0f;
+                break;
+            case 3:
+                clyde.setPosition(ghostHomeX, ghostHomeY);
+                clyde.setFrightened(0.f);
+                ghostRespawn[3] = 5.0f;
+                break;
+            default:
+                break;
+        }
+        eatenGhostsThisTick.push_back({ghostHomeX, ghostHomeY, pts});
+    };
+
+    bool anyPowered = (powerTimer[0] > 0.f) || (powerTimer[1] > 0.f);
+    if (anyPowered) {
+        // Use a conservative collision radius ~ half tile
+        float radius = scaledTileSize * 0.5f * 0.8f;
+        Vec2  p0pos  = players[0].getPosition();
+        Vec2  p1pos  = players[1].getPosition();
+        Vec2  bpos   = blinky.getPosition();
+        Vec2  ppos   = pinky.getPosition();
+        Vec2  ipos   = inky.getPosition();
+        Vec2  cpos   = clyde.getPosition();
+        if (blinky.isFrightened()) {
+            if (collideCircle(p0pos, bpos, radius)) handleGhostEaten(0, 0);
+            if (collideCircle(p1pos, bpos, radius)) handleGhostEaten(1, 0);
+        }
+        if (pinky.isFrightened()) {
+            if (collideCircle(p0pos, ppos, radius)) handleGhostEaten(0, 1);
+            if (collideCircle(p1pos, ppos, radius)) handleGhostEaten(1, 1);
+        }
+        if (inky.isFrightened()) {
+            if (collideCircle(p0pos, ipos, radius)) handleGhostEaten(0, 2);
+            if (collideCircle(p1pos, ipos, radius)) handleGhostEaten(1, 2);
+        }
+        if (clyde.isFrightened()) {
+            if (collideCircle(p0pos, cpos, radius)) handleGhostEaten(0, 3);
+            if (collideCircle(p1pos, cpos, radius)) handleGhostEaten(1, 3);
+        }
+    }
+
+    // Tick down ghost respawn timers
+    for (int i = 0; i < 4; ++i) {
+        if (ghostRespawn[i] > 0.f) {
+            ghostRespawn[i] -= dt;
+            if (ghostRespawn[i] < 0.f) ghostRespawn[i] = 0.f;
+        }
+    }
 }
 
 PlayerStateView Simulation::getPlayerState(int playerIndex) const {
@@ -142,6 +239,11 @@ void Simulation::drainConsumed(std::vector<ConsumedPellet>& out) {
     consumedThisTick.clear();
 }
 
+void Simulation::drainEatenGhosts(std::vector<EatenGhostEvent>& out) {
+    out = std::move(eatenGhostsThisTick);
+    eatenGhostsThisTick.clear();
+}
+
 void Simulation::award(int playerIndex, ScoreEvent eventType) {
     if (playerIndex < 0 || playerIndex > 1) return;
     switch (eventType) {
@@ -153,6 +255,9 @@ void Simulation::award(int playerIndex, ScoreEvent eventType) {
             break;
         case ScoreEvent::Ghost:
             score[playerIndex] += POINTS_GHOST;
+            break;
+        case ScoreEvent::Cherry:
+            score[playerIndex] += POINTS_CHERRY;
             break;
         default:
             break;
@@ -174,4 +279,24 @@ Vec2 Simulation::getGhostPosition(int ghostIndex) const {
             return v;
         }
     }
+}
+
+Direction Simulation::getGhostFacing(int ghostIndex) const {
+    switch (ghostIndex) {
+        case 0:
+            return blinky.getFacing();
+        case 1:
+            return pinky.getFacing();
+        case 2:
+            return inky.getFacing();
+        case 3:
+            return clyde.getFacing();
+        default:
+            return Direction::None;
+    }
+}
+
+bool Simulation::isGhostActive(int ghostIndex) const {
+    if (ghostIndex < 0 || ghostIndex > 3) return false;
+    return ghostRespawn[ghostIndex] <= 0.f;
 }

@@ -9,6 +9,6 @@ class LevelRenderer {
     void draw(sf::RenderWindow& window, const LevelManager& level);
 
    private:
-    sf::Texture wallTexture, pelletTexture, powerPelletTexture;
-    sf::Sprite  wallSprite, pelletSprite, powerPelletSprite;
+    sf::Texture wallTexture, pelletTexture, powerPelletTexture, cherryTexture;
+    sf::Sprite  wallSprite, pelletSprite, powerPelletSprite, cherrySprite;
 };

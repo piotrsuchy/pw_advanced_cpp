@@ -6,8 +6,8 @@ PacMan::PacMan() {
     bool sheetLoaded = texture.loadFromFile("assets/textures/pacman_spritesheet.png");
 
     // Try optional separate textures
-    bool closedLoaded   = textureClosed.loadFromFile("assets/textures/pacman_closed.png");
-    bool openLoaded     = textureOpen.loadFromFile("assets/textures/pacman_open.png");
+    bool closedLoaded   = textureClosed.loadFromFile("assets/textures/pacman/pacman_closed.png");
+    bool openLoaded     = textureOpen.loadFromFile("assets/textures/pacman/pacman_open.png");
     useSeparateTextures = closedLoaded;  // require closed; open is optional
     hasOpenTexture      = openLoaded;
 

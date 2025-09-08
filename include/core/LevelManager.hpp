@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <vector>
 
-enum class TileType : int { Empty = 0, Wall = 1, Pellet = 2, PowerPellet = 3 };
+enum class TileType : int { Empty = 0, Wall = 1, Pellet = 2, PowerPellet = 3, Cherry = 4 };
 
 static TileType fromInt(int v) {
     return static_cast<TileType>(v);

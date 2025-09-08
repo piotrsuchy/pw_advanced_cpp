@@ -15,7 +15,10 @@ class GhostBase {
         positionX = x;
         positionY = y;
     }
-    Vec2 getPosition() const;
+    Vec2      getPosition() const;
+    Direction getFacing() const {
+        return direction;
+    }
 
     void setFrightened(float seconds) {
         frightenedTimer = seconds;

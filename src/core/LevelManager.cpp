@@ -25,7 +25,7 @@ bool LevelManager::collectPellet(int x, int y) {
     if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) {
         return false;
     }
-    if (grid[y][x] == TileType::Pellet || grid[y][x] == TileType::PowerPellet) {
+    if (grid[y][x] == TileType::Pellet || grid[y][x] == TileType::PowerPellet || grid[y][x] == TileType::Cherry) {
         grid[y][x] = TileType::Empty;
         return true;
     }
@@ -38,7 +38,7 @@ TileType LevelManager::collectPelletTyped(int x, int y) {
         return TileType::Empty;
     }
     TileType t = grid[y][x];
-    if (t == TileType::Pellet || t == TileType::PowerPellet) {
+    if (t == TileType::Pellet || t == TileType::PowerPellet || t == TileType::Cherry) {
         grid[y][x] = TileType::Empty;
         return t;
     }
