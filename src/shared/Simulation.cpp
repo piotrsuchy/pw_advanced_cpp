@@ -143,17 +143,7 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     lethalCollide(1, p1pos, inky.getPosition(), inky.isFrightened());
     lethalCollide(1, p1pos, clyde.getPosition(), clyde.isFrightened());
 
-    // Tick death timers and respawn players
-    for (int i = 0; i < 2; ++i) {
-        if (deathTimer[i] > 0.f) {
-            deathTimer[i] -= dt;
-            if (deathTimer[i] <= 0.f) {
-                players[i].setPosition(spawnX[i], spawnY[i]);
-                // clear power for that player
-                powerTimer[i] = 0.f;
-            }
-        }
-    }
+    updatePlayerRespawns(dt);
 
     if (deathTimer[0] <= 0.f) players[0].update(dt, level, scaledTileSize, scale);
     if (deathTimer[1] <= 0.f) players[1].update(dt, level, scaledTileSize, scale);
@@ -323,18 +313,7 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         }
     }
 
-    // Tick down ghost respawn timers
-    for (int i = 0; i < 4; ++i) {
-        if (ghostRespawn[i] > 0.f) {
-            ghostRespawn[i] -= dt;
-            if (ghostRespawn[i] < 0.f) ghostRespawn[i] = 0.f;
-            // keep in house while waiting; when timer ends, reset state to InHouse with a small release delay
-            if (ghostRespawn[i] == 0.f) {
-                ghostState[i]        = GhostState::InHouse;
-                ghostReleaseTimer[i] = 1.0f + 0.5f * i;  // stagger
-            }
-        }
-    }
+    updateGhostRespawns(dt);
 }
 
 PlayerStateView Simulation::getPlayerState(int playerIndex) const {
@@ -416,4 +395,29 @@ Direction Simulation::getGhostFacing(int ghostIndex) const {
 bool Simulation::isGhostActive(int ghostIndex) const {
     if (ghostIndex < 0 || ghostIndex > 3) return false;
     return ghostRespawn[ghostIndex] <= 0.f;
+}
+
+void Simulation::updatePlayerRespawns(float dt) {
+    for (int i = 0; i < 2; ++i) {
+        if (deathTimer[i] > 0.f) {
+            deathTimer[i] -= dt;
+            if (deathTimer[i] <= 0.f) {
+                players[i].setPosition(spawnX[i], spawnY[i]);
+                powerTimer[i] = 0.f;
+            }
+        }
+    }
+}
+
+void Simulation::updateGhostRespawns(float dt) {
+    for (int i = 0; i < 4; ++i) {
+        if (ghostRespawn[i] > 0.f) {
+            ghostRespawn[i] -= dt;
+            if (ghostRespawn[i] < 0.f) ghostRespawn[i] = 0.f;
+            if (ghostRespawn[i] == 0.f) {
+                ghostState[i]        = GhostState::InHouse;
+                ghostReleaseTimer[i] = 1.0f + 0.5f * i;
+            }
+        }
+    }
 }

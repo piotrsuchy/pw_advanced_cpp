@@ -105,4 +105,8 @@ class Simulation {
     bool isGameOver() const {
         return gameOver;
     }
+
+   private:
+    void updatePlayerRespawns(float dt);
+    void updateGhostRespawns(float dt);
 };
