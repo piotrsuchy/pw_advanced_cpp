@@ -82,12 +82,33 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         // Place ghosts near the center box corners
         float gx = offX + (gridW / 2) * scaledTileSize + scaledTileSize * 0.5f;
         float gy = offY + (gridH / 2) * scaledTileSize + scaledTileSize * 0.5f;
-        blinky.setPosition(gx - 2 * scaledTileSize, gy);
-        pinky.setPosition(gx + 2 * scaledTileSize, gy);
-        inky.setPosition(gx, gy - 2 * scaledTileSize);
-        clyde.setPosition(gx, gy + 2 * scaledTileSize);
-        ghostHomeX = gx;
-        ghostHomeY = gy - 2 * scaledTileSize;  // inky initial spot as home
+        // Define house center (middle empty area) and compute a real exit tile just outside the house
+        houseCenterX = gx;
+        houseCenterY = gy;
+        // Find exit above the house: walk up from center through Empty, then through Wall, then stop at first non-Wall
+        int exitGX = gridW / 2;
+        int exitGY = gridH / 2;
+        while (exitGY > 0 && level.getTile(exitGX, exitGY) == TileType::Empty) {
+            --exitGY;
+        }
+        while (exitGY > 0 && level.getTile(exitGX, exitGY) == TileType::Wall) {
+            --exitGY;
+        }
+        houseExitX = offX + exitGX * scaledTileSize + scaledTileSize * 0.5f;
+        houseExitY = offY + exitGY * scaledTileSize + scaledTileSize * 0.5f;
+
+        blinky.setPosition(houseCenterX - scaledTileSize * 0.5f, houseCenterY);
+        pinky.setPosition(houseCenterX + scaledTileSize * 0.5f, houseCenterY);
+        inky.setPosition(houseCenterX, houseCenterY + scaledTileSize * 0.5f);
+        clyde.setPosition(houseCenterX, houseCenterY - scaledTileSize * 0.5f);
+        ghostHomeX = houseCenterX;
+        ghostHomeY = houseCenterY;
+        // Stagger release timers (random-ish)
+        ghostReleaseTimer[0] = 0.5f;  // Blinky
+        ghostReleaseTimer[1] = 1.5f;  // Pinky
+        ghostReleaseTimer[2] = 2.5f;  // Inky
+        ghostReleaseTimer[3] = 3.5f;  // Clyde
+        for (int i = 0; i < 4; ++i) ghostState[i] = GhostState::InHouse;
 
         initializedPositions = true;
     }
@@ -140,11 +161,52 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     auto p0                  = players[0].getPosition();
     auto p1                  = players[1].getPosition();
     auto updateGhostIfActive = [&](GhostBase& g, int idx) {
+        // Handle respawn waiting (after being eaten)
         if (ghostRespawn[idx] > 0.f) {
-            // Keep at home and not frightened while waiting
             g.setFrightened(0.f);
+            // keep them positioned at house center while waiting
+            g.setPosition(houseCenterX, houseCenterY);
             return;
         }
+        // Handle house release state machine
+        if (ghostState[idx] == GhostState::InHouse) {
+            ghostReleaseTimer[idx] -= dt;
+            if (ghostReleaseTimer[idx] <= 0.f) {
+                ghostState[idx] = GhostState::Exiting;
+            }
+        }
+        if (ghostState[idx] == GhostState::Exiting) {
+            // Move toward computed exit (outside of walls). Keep alignment to lane center to avoid drift.
+            Vec2 pos = g.getPosition();
+            // Lock horizontal to exit column to ensure perfect centering while exiting vertically
+            if (std::abs(pos.x - houseExitX) > 0.01f) {
+                pos.x = houseExitX;
+                g.setPosition(pos.x, pos.y);
+            }
+            float dy = houseExitY - pos.y;
+            if (std::abs(dy) < scaledTileSize * 0.25f) {
+                // Snap to exact tile center at doorway and switch to roaming
+                const int   gridW = level.getWidth();
+                const int   gridH = level.getHeight();
+                const float offX  = (800.f - gridW * scaledTileSize) / 2.f;
+                const float offY  = (600.f - gridH * scaledTileSize) / 2.f;
+                int         curX  = static_cast<int>(std::floor((pos.x - offX) / scaledTileSize));
+                int         curY  = static_cast<int>(std::floor((pos.y - offY) / scaledTileSize));
+                float       cx    = offX + curX * scaledTileSize + scaledTileSize * 0.5f;
+                float       cy    = offY + curY * scaledTileSize + scaledTileSize * 0.5f;
+                g.setPosition(cx, cy);
+                ghostState[idx] = GhostState::Roaming;
+            } else {
+                // Step straight toward exit along Y only
+                float speed = 64.f * 6.f * scale;
+                float step  = std::copysign(speed * dt, dy);
+                // Do not overshoot
+                if (std::abs(step) > std::abs(dy)) step = dy;
+                g.setPosition(pos.x, pos.y + step);
+                return;  // don't run roam logic yet
+            }
+        }
+        // Roaming
         g.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
     };
     updateGhostIfActive(blinky, 0);
@@ -266,6 +328,11 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         if (ghostRespawn[i] > 0.f) {
             ghostRespawn[i] -= dt;
             if (ghostRespawn[i] < 0.f) ghostRespawn[i] = 0.f;
+            // keep in house while waiting; when timer ends, reset state to InHouse with a small release delay
+            if (ghostRespawn[i] == 0.f) {
+                ghostState[i]        = GhostState::InHouse;
+                ghostReleaseTimer[i] = 1.0f + 0.5f * i;  // stagger
+            }
         }
     }
 }
