@@ -109,4 +109,7 @@ class Simulation {
    private:
     void updatePlayerRespawns(float dt);
     void updateGhostRespawns(float dt);
+    void handleLethalCollisions(float scaledTileSize);
+    void handleFrightenedCollisions(float scaledTileSize);
+    void handleGhostEaten(int playerIdx, int ghostIdx);
 };

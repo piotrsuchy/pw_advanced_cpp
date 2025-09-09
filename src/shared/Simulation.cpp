@@ -113,35 +113,7 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         initializedPositions = true;
     }
 
-    // Lethal collisions when ghosts are not frightened
-    auto lethalCollide = [&](int playerIdx, Vec2 ppos, Vec2 gpos, bool ghostFrightened) {
-        if (ghostFrightened) return;
-        if (deathTimer[playerIdx] > 0.f) return;
-        float radius = scaledTileSize * 0.5f * 0.8f;
-        float dx     = ppos.x - gpos.x;
-        float dy     = ppos.y - gpos.y;
-        if (dx * dx + dy * dy <= radius * radius) {
-            // kill player
-            lives[playerIdx]      = std::max(0, lives[playerIdx] - 1);
-            deathTimer[playerIdx] = 3.0f;  // freeze 3s for animation on client
-            // respawn at end of timer
-            if (lives[playerIdx] == 0) {
-                gameOver = true;
-            }
-        }
-    };
-
-    // Check lethal collisions against all ghosts
-    Vec2 p0pos = players[0].getPosition();
-    Vec2 p1pos = players[1].getPosition();
-    lethalCollide(0, p0pos, blinky.getPosition(), blinky.isFrightened());
-    lethalCollide(0, p0pos, pinky.getPosition(), pinky.isFrightened());
-    lethalCollide(0, p0pos, inky.getPosition(), inky.isFrightened());
-    lethalCollide(0, p0pos, clyde.getPosition(), clyde.isFrightened());
-    lethalCollide(1, p1pos, blinky.getPosition(), blinky.isFrightened());
-    lethalCollide(1, p1pos, pinky.getPosition(), pinky.isFrightened());
-    lethalCollide(1, p1pos, inky.getPosition(), inky.isFrightened());
-    lethalCollide(1, p1pos, clyde.getPosition(), clyde.isFrightened());
+    handleLethalCollisions(scaledTileSize);
 
     updatePlayerRespawns(dt);
 
@@ -244,74 +216,7 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     if (deathTimer[0] <= 0.f) handlePlayer(0);
     if (deathTimer[1] <= 0.f) handlePlayer(1);
 
-    // Handle collisions between players and ghosts
-    auto collideCircle = [](Vec2 p, Vec2 g, float radius) {
-        float dx = p.x - g.x;
-        float dy = p.y - g.y;
-        return (dx * dx + dy * dy) <= (radius * radius);
-    };
-    auto handleGhostEaten = [&](int playerIdx, int ghostIdx) {
-        // Points escalate per frightened session for that player
-        static const int values[] = {100, 200, 400, 800, 1600};
-        int&             count    = frightenedEatCount[playerIdx];
-        int              pts      = values[std::min(count, 4)];
-        score[playerIdx] += pts;
-        count++;
-        // Respawn ghost at home spot
-        switch (ghostIdx) {
-            case 0:
-                blinky.setPosition(ghostHomeX, ghostHomeY);
-                blinky.setFrightened(0.f);
-                ghostRespawn[0] = 5.0f;
-                break;
-            case 1:
-                pinky.setPosition(ghostHomeX, ghostHomeY);
-                pinky.setFrightened(0.f);
-                ghostRespawn[1] = 5.0f;
-                break;
-            case 2:
-                inky.setPosition(ghostHomeX, ghostHomeY);
-                inky.setFrightened(0.f);
-                ghostRespawn[2] = 5.0f;
-                break;
-            case 3:
-                clyde.setPosition(ghostHomeX, ghostHomeY);
-                clyde.setFrightened(0.f);
-                ghostRespawn[3] = 5.0f;
-                break;
-            default:
-                break;
-        }
-        eatenGhostsThisTick.push_back({ghostHomeX, ghostHomeY, pts});
-    };
-
-    bool anyPowered = (powerTimer[0] > 0.f) || (powerTimer[1] > 0.f);
-    if (anyPowered) {
-        // Use a conservative collision radius ~ half tile
-        float radius = scaledTileSize * 0.5f * 0.8f;
-        Vec2  p0pos  = players[0].getPosition();
-        Vec2  p1pos  = players[1].getPosition();
-        Vec2  bpos   = blinky.getPosition();
-        Vec2  ppos   = pinky.getPosition();
-        Vec2  ipos   = inky.getPosition();
-        Vec2  cpos   = clyde.getPosition();
-        if (blinky.isFrightened()) {
-            if (collideCircle(p0pos, bpos, radius)) handleGhostEaten(0, 0);
-            if (collideCircle(p1pos, bpos, radius)) handleGhostEaten(1, 0);
-        }
-        if (pinky.isFrightened()) {
-            if (collideCircle(p0pos, ppos, radius)) handleGhostEaten(0, 1);
-            if (collideCircle(p1pos, ppos, radius)) handleGhostEaten(1, 1);
-        }
-        if (inky.isFrightened()) {
-            if (collideCircle(p0pos, ipos, radius)) handleGhostEaten(0, 2);
-            if (collideCircle(p1pos, ipos, radius)) handleGhostEaten(1, 2);
-        }
-        if (clyde.isFrightened()) {
-            if (collideCircle(p0pos, cpos, radius)) handleGhostEaten(0, 3);
-            if (collideCircle(p1pos, cpos, radius)) handleGhostEaten(1, 3);
-        }
-    }
+    handleFrightenedCollisions(scaledTileSize);
 
     updateGhostRespawns(dt);
 }
@@ -419,5 +324,94 @@ void Simulation::updateGhostRespawns(float dt) {
                 ghostReleaseTimer[i] = 1.0f + 0.5f * i;
             }
         }
+    }
+}
+
+void Simulation::handleLethalCollisions(float scaledTileSize) {
+    auto lethalCollide = [&](int playerIdx, Vec2 ppos, Vec2 gpos, bool ghostFrightened) {
+        if (ghostFrightened) return;
+        if (deathTimer[playerIdx] > 0.f) return;
+        float radius = scaledTileSize * 0.5f * 0.8f;
+        float dx     = ppos.x - gpos.x;
+        float dy     = ppos.y - gpos.y;
+        if (dx * dx + dy * dy <= radius * radius) {
+            lives[playerIdx]      = std::max(0, lives[playerIdx] - 1);
+            deathTimer[playerIdx] = 3.0f;
+            if (lives[playerIdx] == 0) {
+                gameOver = true;
+            }
+        }
+    };
+    Vec2 p0pos = players[0].getPosition();
+    Vec2 p1pos = players[1].getPosition();
+    lethalCollide(0, p0pos, blinky.getPosition(), blinky.isFrightened());
+    lethalCollide(0, p0pos, pinky.getPosition(), pinky.isFrightened());
+    lethalCollide(0, p0pos, inky.getPosition(), inky.isFrightened());
+    lethalCollide(0, p0pos, clyde.getPosition(), clyde.isFrightened());
+    lethalCollide(1, p1pos, blinky.getPosition(), blinky.isFrightened());
+    lethalCollide(1, p1pos, pinky.getPosition(), pinky.isFrightened());
+    lethalCollide(1, p1pos, inky.getPosition(), inky.isFrightened());
+    lethalCollide(1, p1pos, clyde.getPosition(), clyde.isFrightened());
+}
+
+void Simulation::handleGhostEaten(int playerIdx, int ghostIdx) {
+    static const int values[] = {100, 200, 400, 800, 1600};
+    int&             count    = frightenedEatCount[playerIdx];
+    int              pts      = values[std::min(count, 4)];
+    score[playerIdx] += pts;
+    count++;
+    switch (ghostIdx) {
+        case 0:
+            blinky.setPosition(ghostHomeX, ghostHomeY);
+            blinky.setFrightened(0.f);
+            ghostRespawn[0] = 5.0f;
+            break;
+        case 1:
+            pinky.setPosition(ghostHomeX, ghostHomeY);
+            pinky.setFrightened(0.f);
+            ghostRespawn[1] = 5.0f;
+            break;
+        case 2:
+            inky.setPosition(ghostHomeX, ghostHomeY);
+            inky.setFrightened(0.f);
+            ghostRespawn[2] = 5.0f;
+            break;
+        case 3:
+            clyde.setPosition(ghostHomeX, ghostHomeY);
+            clyde.setFrightened(0.f);
+            ghostRespawn[3] = 5.0f;
+            break;
+        default:
+            break;
+    }
+    eatenGhostsThisTick.push_back({ghostHomeX, ghostHomeY, pts});
+}
+
+void Simulation::handleFrightenedCollisions(float scaledTileSize) {
+    bool anyPowered = (powerTimer[0] > 0.f) || (powerTimer[1] > 0.f);
+    if (!anyPowered) return;
+    auto collideCircle = [](Vec2 p, Vec2 g, float radius) {
+        float dx = p.x - g.x;
+        float dy = p.y - g.y;
+        return (dx * dx + dy * dy) <= (radius * radius);
+    };
+    float radius = scaledTileSize * 0.5f * 0.8f;
+    Vec2  p0pos  = players[0].getPosition();
+    Vec2  p1pos  = players[1].getPosition();
+    if (blinky.isFrightened()) {
+        if (collideCircle(p0pos, blinky.getPosition(), radius)) handleGhostEaten(0, 0);
+        if (collideCircle(p1pos, blinky.getPosition(), radius)) handleGhostEaten(1, 0);
+    }
+    if (pinky.isFrightened()) {
+        if (collideCircle(p0pos, pinky.getPosition(), radius)) handleGhostEaten(0, 1);
+        if (collideCircle(p1pos, pinky.getPosition(), radius)) handleGhostEaten(1, 1);
+    }
+    if (inky.isFrightened()) {
+        if (collideCircle(p0pos, inky.getPosition(), radius)) handleGhostEaten(0, 2);
+        if (collideCircle(p1pos, inky.getPosition(), radius)) handleGhostEaten(1, 2);
+    }
+    if (clyde.isFrightened()) {
+        if (collideCircle(p0pos, clyde.getPosition(), radius)) handleGhostEaten(0, 3);
+        if (collideCircle(p1pos, clyde.getPosition(), radius)) handleGhostEaten(1, 3);
     }
 }
