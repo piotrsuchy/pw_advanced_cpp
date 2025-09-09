@@ -13,6 +13,8 @@ struct PlayerStateView {
     int       score{0};
     bool      powered{false};
     float     powerTimeLeft{0.f};
+    int       livesLeft{3};
+    float     deathTimeLeft{0.f};
 };
 
 enum class ScoreEvent { Pellet, PowerPellet, Ghost, Cherry };
@@ -62,6 +64,8 @@ class Simulation {
     void drainEatenGhosts(std::vector<EatenGhostEvent>& out);
 
    private:
+    enum class GhostState { InHouse, Exiting, Roaming };
+
     LevelManager level;
     PacmanLogic  players[2];
     Blinky       blinky;
@@ -74,12 +78,38 @@ class Simulation {
     int   score[2]              = {0, 0};
     float powerTimer[2]         = {0.f, 0.f};
     int   frightenedEatCount[2] = {0, 0};
+    int   lives[2]              = {3, 3};
+    float deathTimer[2]         = {0.f, 0.f};
 
     // Ghost home (respawn) position in world coords
     float ghostHomeX{0.f};
     float ghostHomeY{0.f};
+    // Ghost house center and exit doorway (world coordinates)
+    float      houseCenterX{0.f};
+    float      houseCenterY{0.f};
+    float      houseExitX{0.f};
+    float      houseExitY{0.f};
+    GhostState ghostState[4] = {GhostState::InHouse, GhostState::InHouse, GhostState::InHouse, GhostState::InHouse};
+    float      ghostReleaseTimer[4] = {0.f, 0.f, 0.f, 0.f};
+    // player spawn positions
+    float spawnX[2]{0.f, 0.f};
+    float spawnY[2]{0.f, 0.f};
 
     std::vector<ConsumedPellet>  consumedThisTick;
     std::vector<EatenGhostEvent> eatenGhostsThisTick;
     float                        ghostRespawn[4] = {0.f, 0.f, 0.f, 0.f};
+
+    bool gameOver{false};
+
+   public:
+    bool isGameOver() const {
+        return gameOver;
+    }
+
+   private:
+    void updatePlayerRespawns(float dt);
+    void updateGhostRespawns(float dt);
+    void handleLethalCollisions(float scaledTileSize);
+    void handleFrightenedCollisions(float scaledTileSize);
+    void handleGhostEaten(int playerIdx, int ghostIdx);
 };

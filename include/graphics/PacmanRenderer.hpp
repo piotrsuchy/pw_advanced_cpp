@@ -12,6 +12,7 @@ class PacmanRenderer {
     void setFacing(Direction d);
     void tick(float dt, bool isMoving, float scale);
     void draw(sf::RenderWindow& window);
+    void setDeathTimeLeft(float t);
 
    private:
     // Textures and sprite
@@ -20,6 +21,10 @@ class PacmanRenderer {
     bool        hasOpen{false};
     bool        loadedClosed{false};
     sf::Sprite  sprite;
+    // death frames
+    bool        deathLoaded{false};
+    sf::Texture deathFrames[11];
+    float       deathTimeLeft{0.f};
 
     // Animation state
     bool  mouthOpen{false};
