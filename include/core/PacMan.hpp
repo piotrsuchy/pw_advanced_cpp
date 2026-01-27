@@ -17,10 +17,14 @@ class PacMan : public Entity {
     Direction direction{Direction::None};         // where it goes now
     Direction desiredDirection{Direction::None};  // queued turn
     Direction facingDirection{Direction::Right};  // last non-None facing
-    float     speed{576.f};                       // 9 * 64.f
+    float     speed{384.f};                       // matches PacmanLogic
 
     bool aligned(float tile, float offX, float offY) const;
     bool canMove(Direction dir, const LevelManager& lvl, float tile, float offX, float offY);
+    bool canCornerTurn(Direction newDir, float tile, float offX, float offY, const LevelManager& lvl) const;
+    bool isPerpendicular(Direction a, Direction b) const;
+
+    static constexpr float CORNER_TOLERANCE = 8.f;  // pixels from tile center to allow cornering
 
     // Spritesheet texture (fallback) and optional separate textures
     sf::Texture texture;

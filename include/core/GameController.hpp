@@ -26,4 +26,8 @@ class GameController {
     LevelManager  level;
     LevelRenderer levelRenderer;
     float         scaledTileSize = 0.0f;  // Store the scaled tile size
+
+    // Fixed timestep for consistent physics
+    static constexpr float FIXED_TIMESTEP = 1.0f / 60.0f;
+    float                  accumulator    = 0.0f;
 };

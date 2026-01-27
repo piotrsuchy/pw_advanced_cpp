@@ -22,7 +22,14 @@ void InputManager::handleEvent(const sf::Event& e) {
 }
 
 Direction InputManager::popQueuedDirection() {
-    Direction d = queuedDir;
-    queuedDir   = Direction::None;
-    return d;
+    // Persistent: direction stays until new key is pressed
+    return queuedDir;
+}
+
+Direction InputManager::getDesiredDirection() const {
+    return queuedDir;
+}
+
+void InputManager::clearQueuedDirection() {
+    queuedDir = Direction::None;
 }
