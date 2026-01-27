@@ -30,4 +30,7 @@ class GameController {
     // Fixed timestep for consistent physics
     static constexpr float FIXED_TIMESTEP = 1.0f / 60.0f;
     float                  accumulator    = 0.0f;
+
+    // Game state
+    bool levelComplete = false;
 };

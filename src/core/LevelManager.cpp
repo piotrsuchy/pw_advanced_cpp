@@ -44,3 +44,15 @@ TileType LevelManager::collectPelletTyped(int x, int y) {
     }
     return TileType::Empty;
 }
+
+int LevelManager::getRemainingPellets() const {
+    int count = 0;
+    for (const auto& row : grid) {
+        for (TileType tile : row) {
+            if (tile == TileType::Pellet || tile == TileType::PowerPellet) {
+                ++count;
+            }
+        }
+    }
+    return count;
+}

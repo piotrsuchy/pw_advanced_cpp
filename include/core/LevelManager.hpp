@@ -37,6 +37,9 @@ class LevelManager {
     // Returns the type of pellet consumed at (x,y), or TileType::Empty if none
     TileType collectPelletTyped(int x, int y);
 
+    // Returns count of remaining pellets (Pellet + PowerPellet, excludes Cherry)
+    int getRemainingPellets() const;
+
    private:
     std::vector<std::vector<TileType>> grid;
 };

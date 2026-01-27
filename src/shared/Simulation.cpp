@@ -216,6 +216,11 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     if (deathTimer[0] <= 0.f) handlePlayer(0);
     if (deathTimer[1] <= 0.f) handlePlayer(1);
 
+    // Check for level completion (all pellets eaten)
+    if (!levelComplete && level.getRemainingPellets() == 0) {
+        levelComplete = true;
+    }
+
     handleFrightenedCollisions(scaledTileSize);
 
     updateGhostRespawns(dt);

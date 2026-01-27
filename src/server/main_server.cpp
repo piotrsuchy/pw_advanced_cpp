@@ -128,6 +128,11 @@ int main(int argc, char** argv) {
                 std::cout << "[SERVER] Game over. Exiting." << std::endl;
                 std::exit(0);
             }
+            if (sim.isLevelComplete()) {
+                std::cout << "[SERVER] Level complete! All pellets eaten." << std::endl;
+                // TODO: Could load next level here instead of exiting
+                std::exit(0);
+            }
 
             // Drain pellet and eaten-ghost events for this tick once
             std::vector<Simulation::ConsumedPellet> deltas;

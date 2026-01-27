@@ -100,10 +100,14 @@ class Simulation {
     float                        ghostRespawn[4] = {0.f, 0.f, 0.f, 0.f};
 
     bool gameOver{false};
+    bool levelComplete{false};
 
    public:
     bool isGameOver() const {
         return gameOver;
+    }
+    bool isLevelComplete() const {
+        return levelComplete;
     }
 
    private:

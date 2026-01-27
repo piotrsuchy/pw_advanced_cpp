@@ -82,6 +82,12 @@ void GameController::run() {
             accumulator -= FIXED_TIMESTEP;
         }
 
+        // Check for level completion
+        if (!levelComplete && level.getRemainingPellets() == 0) {
+            levelComplete = true;
+            std::cout << "Level complete! All pellets eaten." << std::endl;
+        }
+
         render();
     }
 }
