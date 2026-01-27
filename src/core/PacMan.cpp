@@ -24,10 +24,22 @@ void PacMan::update(float dt, LevelManager& level, float scaledTileSize, float s
     // 1) normal queued-turn logic (needs alignment)
     if (aligned(scaledTileSize, offX, offY) && canMove(desiredDirection, level, scaledTileSize, offX, offY)) {
         direction = desiredDirection;
-    } else {
-        std::cout << "DEBUG: Can't move or is not aligned" << "\n";
-        std::cout << "DEBUG: CAN MOVE: " << canMove(desiredDirection, level, scaledTileSize, offX, offY) << "\n";
-        std::cout << "DEBUG: ALIGNED: " << aligned(scaledTileSize, offX, offY) << "\n";
+    }
+    // 2) Cornering: allow perpendicular turns within CORNER_TOLERANCE of tile center
+    else if (canCornerTurn(desiredDirection, scaledTileSize, offX, offY, level)) {
+        // Snap to the perpendicular lane center before turning
+        int   curX = static_cast<int>(std::floor((position.x - offX) / scaledTileSize));
+        int   curY = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
+        float cx   = offX + curX * scaledTileSize + scaledTileSize / 2.f;
+        float cy   = offY + curY * scaledTileSize + scaledTileSize / 2.f;
+
+        // Snap the axis we're about to move along
+        if (desiredDirection == Direction::Left || desiredDirection == Direction::Right) {
+            position.y = cy;
+        } else if (desiredDirection == Direction::Up || desiredDirection == Direction::Down) {
+            position.x = cx;
+        }
+        direction = desiredDirection;
     }
 
     // remember last non-None facing direction
@@ -144,7 +156,7 @@ void PacMan::update(float dt, LevelManager& level, float scaledTileSize, float s
 
 // helpers
 bool PacMan::aligned(float tile, float offX, float offY) const {
-    constexpr float eps = 2.f;  // half a pixel tolerance
+    constexpr float eps = 6.f;  // increased for better responsiveness
 
     float cx = std::fmod(position.x - offX, tile);
     float cy = std::fmod(position.y - offY, tile);
@@ -186,4 +198,58 @@ Direction PacMan::getDirection() {
 
 sf::Vector2f PacMan::getPosition() {
     return PacMan::position;
+}
+
+bool PacMan::isPerpendicular(Direction a, Direction b) const {
+    if (a == Direction::None || b == Direction::None) return false;
+    bool aHorizontal = (a == Direction::Left || a == Direction::Right);
+    bool bHorizontal = (b == Direction::Left || b == Direction::Right);
+    return aHorizontal != bHorizontal;
+}
+
+bool PacMan::canCornerTurn(Direction newDir, float tile, float offX, float offY, const LevelManager& lvl) const {
+    // Only allow cornering for perpendicular turns
+    if (!isPerpendicular(newDir, direction)) return false;
+    if (newDir == Direction::None) return false;
+
+    // Calculate current tile and center
+    int   curX = static_cast<int>(std::floor((position.x - offX) / tile));
+    int   curY = static_cast<int>(std::floor((position.y - offY) / tile));
+    float cx   = offX + curX * tile + tile / 2.f;
+    float cy   = offY + curY * tile + tile / 2.f;
+
+    // Check distance along the current movement axis
+    float distToCenter = 0.f;
+    if (direction == Direction::Left || direction == Direction::Right) {
+        distToCenter = std::abs(position.x - cx);
+    } else if (direction == Direction::Up || direction == Direction::Down) {
+        distToCenter = std::abs(position.y - cy);
+    }
+
+    // Must be within corner tolerance
+    if (distToCenter > CORNER_TOLERANCE) return false;
+
+    // Check if target tile is not a wall
+    int targetX = curX;
+    int targetY = curY;
+    switch (newDir) {
+        case Direction::Up:
+            --targetY;
+            break;
+        case Direction::Down:
+            ++targetY;
+            break;
+        case Direction::Left:
+            --targetX;
+            break;
+        case Direction::Right:
+            ++targetX;
+            break;
+        default:
+            return false;
+    }
+
+    if (targetX < 0 || targetY < 0 || targetX >= lvl.getWidth() || targetY >= lvl.getHeight()) return false;
+
+    return lvl.getTile(targetX, targetY) != TileType::Wall;
 }

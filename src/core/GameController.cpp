@@ -20,7 +20,12 @@ void GameController::run() {
     while (window.isOpen()) {
         std::cout << "DEBUG: Position: " << pacman.getPosition() << "\n";
         std::cout << "DEBUG: Direction: " << pacman.getDirection() << "\n";
-        float deltaTime = clock.restart().asSeconds();
+
+        // Fixed timestep with accumulator
+        float frameTime = clock.restart().asSeconds();
+        // Cap frame time to prevent spiral of death on lag spikes
+        if (frameTime > 0.25f) frameTime = 0.25f;
+
         processEvents();
 
         if (firstFrame) {
@@ -70,7 +75,13 @@ void GameController::run() {
             firstFrame = false;
         }
 
-        update(deltaTime);
+        // Accumulator-based fixed timestep updates
+        accumulator += frameTime;
+        while (accumulator >= FIXED_TIMESTEP) {
+            update(FIXED_TIMESTEP);
+            accumulator -= FIXED_TIMESTEP;
+        }
+
         render();
     }
 }

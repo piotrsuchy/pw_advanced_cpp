@@ -30,6 +30,10 @@ class PacmanLogic {
    private:
     bool aligned(float tile, float offX, float offY) const;
     bool canMove(Direction dir, const LevelManager& lvl, float tile, float offX, float offY);
+    bool canCornerTurn(Direction newDir, float tile, float offX, float offY, const LevelManager& lvl) const;
+    bool isPerpendicular(Direction a, Direction b) const;
+
+    static constexpr float CORNER_TOLERANCE = 8.f;  // pixels from tile center to allow cornering
 
     Vec2      position{0.f, 0.f};
     Direction direction{Direction::None};
