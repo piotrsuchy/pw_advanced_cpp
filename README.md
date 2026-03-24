@@ -1,5 +1,9 @@
 # PacManGame
 
+## Documentation
+
+See [docs/README.md](docs/README.md).
+
 ## Formatting and Linting
 
 This project uses clang-format for code formatting and clang-tidy for static analysis.

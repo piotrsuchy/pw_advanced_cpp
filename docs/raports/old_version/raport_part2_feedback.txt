@@ -1,0 +1,5 @@
+Przypominam, że miała być dokumentacja przyrostowa - czyli to co z etapu 1 (ewentualnie poprawione) + nowości z etapu 2. Właściwie powinienem odrzucić do poprawy. Proszę pamiętać o "dokumentacji przyrostowej" na dalszych etapach.
+Proszę pamiętać o rozdzieleniu grafiki od logik - oddzielił Pan, ale na poziomie metod a  nie odrębnych klas.
+Opis dosyć szczegółowy, niestety projekt raczej niezbyt skomplikowany. 
+Może w hierarchii obiektów wydzielić obiekty nieruchome/ruchome? Można też niezależnie zaprojektować obiekty i algorytmy ruszania się (gracz, duch).
+Dlaczego na diagramie w ogóle nie pokazał Pan kompozycji/agregacji?
