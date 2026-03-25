@@ -1,0 +1,148 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+
+package "Warstwa Logiki (Core/Shared)" {
+    abstract class Entity {
+        - id: int
+        - position: Vec2
+        - speed: float
+        + {abstract} update(dt: float): void
+        + getPosition(): Vec2
+    }
+
+    class PacMan {
+        - direction: Vec2
+        - score: int
+        + update(dt: float): void
+        + eatPellet()
+    }
+
+    abstract class GhostBase {
+        - target: Vec2
+        - state: GhostState
+        + {abstract} calculateTarget(): void
+        + update(dt: float): void
+    }
+
+    class Blinky {
+        + calculateTarget(): void
+    }
+    class Pinky {
+        + calculateTarget(): void
+    }
+    class Inky {
+        + calculateTarget(): void
+    }
+    class Clyde {
+        + calculateTarget(): void
+    }
+
+    class PowerUp {
+        - type: PowerUpType
+        - duration: float
+        + applyEffect(player: PacMan)
+        + update(dt: float): void
+    }
+
+    class Grid<T> {
+        - cells: vector<T>
+        - width: int
+        - height: int
+        + getCell(x: int, y: int): T
+        + setCell(x: int, y: int, value: T)
+    }
+
+    class LevelManager {
+        - grid: Grid<CellType>
+        - pelletsRemaining: int
+        + loadLevel(filepath: string)
+        + checkCollisions(entity: Entity)
+    }
+
+    class Simulation {
+        - players: vector<unique_ptr<PacMan>>
+        - ghosts: vector<unique_ptr<GhostBase>>
+        - levelManager: LevelManager
+        + step(dt: float)
+    }
+
+    Entity <|-- "Dziedziczenie" PacMan
+    Entity <|-- "Dziedziczenie" GhostBase
+    Entity <|-- "Dziedziczenie" PowerUp
+    
+    GhostBase <|-- "Dziedziczenie" Blinky
+    GhostBase <|-- "Dziedziczenie" Pinky
+    GhostBase <|-- "Dziedziczenie" Inky
+    GhostBase <|-- "Dziedziczenie" Clyde
+
+    Simulation *-- "Kompozycja" PacMan
+    Simulation *-- "Kompozycja" GhostBase
+    Simulation *-- "Kompozycja" LevelManager
+    LevelManager *-- "Kompozycja" Grid
+}
+
+package "Warstwa Sieciowa (Network)" {
+    class NetworkManager <<Singleton>> {
+        - static instance: NetworkManager
+        + static getInstance()
+        + sendPacket(packet: Packet)
+        + receivePacket(): Packet
+    }
+
+    class Server {
+        - clients: vector<ClientInfo>
+        - simulation: Simulation
+        + start()
+        + broadcastGameState()
+    }
+
+    class Client {
+        - serverAddress: string
+        - localState: GameState
+        + connect()
+        + sendInput(input: InputData)
+    }
+
+    class GameState {
+        + serialize(): byte[]
+        + deserialize(data: byte[])
+    }
+
+    Server --> "Asocjacja" NetworkManager
+    Client --> "Asocjacja" NetworkManager
+    Server *-- "Kompozycja" Simulation
+    Client *-- "Kompozycja" GameState
+}
+
+package "Warstwa Interfejsu, Grafiki i Wejścia (UI/Graphics)" {
+    class GameController {
+        - state: GameState
+        - window: RenderWindow
+        + run()
+        + processEvents()
+    }
+
+    class InputManager {
+        + getPlayerInput(): InputData
+    }
+
+    class LevelRenderer {
+        + draw(window: RenderWindow, level: LevelManager)
+    }
+
+    class PacmanRenderer {
+        + draw(window: RenderWindow, pacman: PacMan)
+    }
+
+    class GhostRenderer {
+        + draw(window: RenderWindow, ghost: GhostBase)
+    }
+
+    GameController *-- "Kompozycja" GameState
+    GameController o-- "Agregacja" InputManager
+    GameController o-- "Agregacja" LevelRenderer
+    GameController o-- "Agregacja" PacmanRenderer
+    GameController o-- "Agregacja" GhostRenderer
+}
+@enduml

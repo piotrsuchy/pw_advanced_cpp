@@ -39,3 +39,16 @@ Obowiązuje zachowanie kolejności oddawania etapów:
 - nie można oddać Etapu III, jeśli Etap II nie został oceniony.
 
 Dlatego zachęcamy do regularnej pracy – to naprawdę ułatwia życie zarówno Wam, jak i prowadzącym.
+
+### Wymagania wspólne dla wszystkich projektów
+
+W każdym projekcie wymagamy następujących elementów:
+
+- Prawidłowe wykorzystanie klas – program ma być napisany obiektowo, a podział na klasy i przypisanie im odpowiedzialności ma być sensowne (w razie wątpliwości – konsultujcie pomysły z prowadzącymi).
+- Dziedziczenie – musi występować w projekcie; w projektach ocenianych na więcej niż 3.0 musi pojawić się także polimorfizm.
+- Dobry styl organizacji kodu – deklaracje klas w plikach nagłówkowych (.h), definicje metod w plikach implementacji (.cpp), każda klasa w swoich plikach. Szablony umieszczamy w całości w nagłówkach.
+- Dokumentacja doxygen – wymagany jest udokumentowany interfejs publiczny klas: opis przeznaczenia klasy oraz opis metod publicznych i chronionych (do czego służą, parametry, wartość zwracana).
+- Wykorzystanie STL (lub innej biblioteki opartej na szablonach) – nawet jeśli w danym projekcie będzie to „na siłę”.
+- Rozdzielenie logiki od interfejsu użytkownika – o ile nie ma ku temu uzasadnionych przeciwwskazań. W idealnym przypadku program powinien dać się zbudować i uruchomić także w wersji bez GUI.
+- Dla maksymalnej oceny: przygotowanie i wykorzystanie własnego szablonu / własnych szablonów (nawet jeśli będą proste i nie w pełni optymalne).
+- Dla maksymalnej oceny: korzystanie z repozytorium (git lub svn) od początku pracy, również przy pracy indywidualnej.
