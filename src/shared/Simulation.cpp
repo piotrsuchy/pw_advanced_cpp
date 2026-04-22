@@ -3,7 +3,18 @@
 #include <cmath>
 #include <iostream>
 
-Simulation::Simulation() {}
+// Helper: compute pixel offsets from grid/window dimensions
+static void computeOffsets(const LevelManager& level, float scaledTileSize, float& offX, float& offY) {
+    offX = (800.f - level.getWidth() * scaledTileSize) / 2.f;
+    offY = (600.f - level.getHeight() * scaledTileSize) / 2.f;
+}
+
+Simulation::Simulation() {
+    ghosts[0] = std::make_unique<Ghost>(std::make_unique<BlinkyAI>());
+    ghosts[1] = std::make_unique<Ghost>(std::make_unique<PinkyAI>());
+    ghosts[2] = std::make_unique<Ghost>(std::make_unique<InkyAI>());
+    ghosts[3] = std::make_unique<Ghost>(std::make_unique<ClydeAI>());
+}
 
 void Simulation::initLevel(int levelNumber) {
     level.loadLevel(levelNumber);
@@ -12,231 +23,206 @@ void Simulation::initLevel(int levelNumber) {
 
 void Simulation::setDesired(int playerIndex, Direction d) {
     if (playerIndex < 0 || playerIndex > 1) return;
-    players[playerIndex].setDesired(d);
+    players[playerIndex].getPacman().setDesired(d);
 }
 
 void Simulation::step(float dt, float scaledTileSize, float scale) {
     if (!initializedPositions) {
-        // Compute offsets as in rendering to align world/grid coordinates
-        const int   gridW = level.getWidth();
-        const int   gridH = level.getHeight();
-        const float offX  = (800.f - gridW * scaledTileSize) / 2.f;
-        const float offY  = (600.f - gridH * scaledTileSize) / 2.f;
+        float offX, offY;
+        computeOffsets(level, scaledTileSize, offX, offY);
+        const int gridW = level.getWidth();
+        const int gridH = level.getHeight();
 
-        // Spawn P0 at first pellet in row 1 (left side), fallback to any non-wall
-        bool p0Placed = false;
-        if (gridH > 1) {
-            for (int x = 0; x < gridW; ++x) {
-                if (level.getTile(x, 1) == TileType::Pellet) {
-                    players[0].setPosition(offX + x * scaledTileSize + scaledTileSize / 2.f,
-                                           offY + 1 * scaledTileSize + scaledTileSize / 2.f);
-                    p0Placed = true;
-                    break;
-                }
-            }
-        }
-        if (!p0Placed) {
-            for (int y = 0; y < gridH && !p0Placed; ++y) {
-                for (int x = 0; x < gridW; ++x) {
-                    if (level.getTile(x, y) != TileType::Wall) {
-                        players[0].setPosition(offX + x * scaledTileSize + scaledTileSize / 2.f,
-                                               offY + y * scaledTileSize + scaledTileSize / 2.f);
-                        p0Placed = true;
-                        break;
+        // Spawn P0 at first pellet in row 1, P1 at last
+        auto placePlayer = [&](int pi, bool fromLeft) {
+            bool placed = false;
+            if (gridH > 1) {
+                int start = fromLeft ? 0 : gridW - 1;
+                int end   = fromLeft ? gridW : -1;
+                int step  = fromLeft ? 1 : -1;
+                for (int x = start; x != end && !placed; x += step) {
+                    if (level.getTile(x, 1) == TileType::Pellet) {
+                        players[pi].getPacman().setPosition(offX + x * scaledTileSize + scaledTileSize / 2.f,
+                                                            offY + 1 * scaledTileSize + scaledTileSize / 2.f);
+                        placed = true;
                     }
                 }
             }
-        }
-
-        // Spawn P1 at right-most pellet in row 1, fallback to any non-wall from right/bottom
-        bool p1Placed = false;
-        if (gridH > 1) {
-            for (int x = gridW - 1; x >= 0; --x) {
-                if (level.getTile(x, 1) == TileType::Pellet) {
-                    players[1].setPosition(offX + x * scaledTileSize + scaledTileSize / 2.f,
-                                           offY + 1 * scaledTileSize + scaledTileSize / 2.f);
-                    p1Placed = true;
-                    break;
-                }
-            }
-        }
-        if (!p1Placed) {
-            for (int y = gridH - 1; y >= 0 && !p1Placed; --y) {
-                for (int x = gridW - 1; x >= 0; --x) {
-                    if (level.getTile(x, y) != TileType::Wall) {
-                        players[1].setPosition(offX + x * scaledTileSize + scaledTileSize / 2.f,
-                                               offY + y * scaledTileSize + scaledTileSize / 2.f);
-                        p1Placed = true;
-                        break;
+            if (!placed) {
+                for (int y = 0; y < gridH && !placed; ++y) {
+                    int xStart = fromLeft ? 0 : gridW - 1;
+                    int xEnd   = fromLeft ? gridW : -1;
+                    int xStep  = fromLeft ? 1 : -1;
+                    for (int x = xStart; x != xEnd && !placed; x += xStep) {
+                        if (level.getTile(x, y) != TileType::Wall) {
+                            players[pi].getPacman().setPosition(offX + x * scaledTileSize + scaledTileSize / 2.f,
+                                                                offY + y * scaledTileSize + scaledTileSize / 2.f);
+                            placed = true;
+                        }
                     }
                 }
             }
-        }
+            auto pos = players[pi].getPacman().getPosition();
+            players[pi].setSpawn(pos.x, pos.y);
+        };
 
-        // Store spawn positions for players
-        spawnX[0] = players[0].getPosition().x;
-        spawnY[0] = players[0].getPosition().y;
-        spawnX[1] = players[1].getPosition().x;
-        spawnY[1] = players[1].getPosition().y;
+        placePlayer(0, true);
+        placePlayer(1, false);
 
-        // Place ghosts near the center box corners
-        float gx = offX + (gridW / 2) * scaledTileSize + scaledTileSize * 0.5f;
-        float gy = offY + (gridH / 2) * scaledTileSize + scaledTileSize * 0.5f;
-        // Define house center (middle empty area) and compute a real exit tile just outside the house
+        // Place ghosts at house center
+        float gx     = offX + (gridW / 2) * scaledTileSize + scaledTileSize * 0.5f;
+        float gy     = offY + (gridH / 2) * scaledTileSize + scaledTileSize * 0.5f;
         houseCenterX = gx;
         houseCenterY = gy;
-        // Find exit above the house: walk up from center through Empty, then through Wall, then stop at first non-Wall
+
+        // Find exit above the house
         int exitGX = gridW / 2;
         int exitGY = gridH / 2;
-        while (exitGY > 0 && level.getTile(exitGX, exitGY) == TileType::Empty) {
-            --exitGY;
-        }
-        while (exitGY > 0 && level.getTile(exitGX, exitGY) == TileType::Wall) {
-            --exitGY;
-        }
+        while (exitGY > 0 && level.getTile(exitGX, exitGY) == TileType::Empty) --exitGY;
+        while (exitGY > 0 && level.getTile(exitGX, exitGY) == TileType::Wall) --exitGY;
         houseExitX = offX + exitGX * scaledTileSize + scaledTileSize * 0.5f;
         houseExitY = offY + exitGY * scaledTileSize + scaledTileSize * 0.5f;
 
-        blinky.setPosition(houseCenterX - scaledTileSize * 0.5f, houseCenterY);
-        pinky.setPosition(houseCenterX + scaledTileSize * 0.5f, houseCenterY);
-        inky.setPosition(houseCenterX, houseCenterY + scaledTileSize * 0.5f);
-        clyde.setPosition(houseCenterX, houseCenterY - scaledTileSize * 0.5f);
+        ghosts[0]->setPosition(houseCenterX - scaledTileSize * 0.5f, houseCenterY);
+        ghosts[1]->setPosition(houseCenterX + scaledTileSize * 0.5f, houseCenterY);
+        ghosts[2]->setPosition(houseCenterX, houseCenterY + scaledTileSize * 0.5f);
+        ghosts[3]->setPosition(houseCenterX, houseCenterY - scaledTileSize * 0.5f);
         ghostHomeX = houseCenterX;
         ghostHomeY = houseCenterY;
-        // Stagger release timers (random-ish)
-        ghostReleaseTimer[0] = 0.5f;  // Blinky
-        ghostReleaseTimer[1] = 1.5f;  // Pinky
-        ghostReleaseTimer[2] = 2.5f;  // Inky
-        ghostReleaseTimer[3] = 3.5f;  // Clyde
-        for (int i = 0; i < 4; ++i) ghostState[i] = GhostState::InHouse;
+
+        // Stagger release timers
+        for (int i = 0; i < 4; ++i) {
+            ghostReleaseTimer[i] = 0.5f + i * 1.0f;
+            ghostState[i]        = GhostState::InHouse;
+        }
 
         initializedPositions = true;
     }
 
-    handleLethalCollisions(scaledTileSize);
-
-    updatePlayerRespawns(dt);
-
-    if (deathTimer[0] <= 0.f) players[0].update(dt, level, scaledTileSize, scale);
-    if (deathTimer[1] <= 0.f) players[1].update(dt, level, scaledTileSize, scale);
-    // Update ghosts
-    auto p0                  = players[0].getPosition();
-    auto p1                  = players[1].getPosition();
-    auto updateGhostIfActive = [&](GhostBase& g, int idx) {
-        // Handle respawn waiting (after being eaten)
-        if (ghostRespawn[idx] > 0.f) {
-            g.setFrightened(0.f);
-            // keep them positioned at house center while waiting
-            g.setPosition(houseCenterX, houseCenterY);
-            return;
-        }
-        // Handle house release state machine
-        if (ghostState[idx] == GhostState::InHouse) {
-            ghostReleaseTimer[idx] -= dt;
-            if (ghostReleaseTimer[idx] <= 0.f) {
-                ghostState[idx] = GhostState::Exiting;
-            }
-        }
-        if (ghostState[idx] == GhostState::Exiting) {
-            // Move toward computed exit (outside of walls). Keep alignment to lane center to avoid drift.
-            Vec2 pos = g.getPosition();
-            // Lock horizontal to exit column to ensure perfect centering while exiting vertically
-            if (std::abs(pos.x - houseExitX) > 0.01f) {
-                pos.x = houseExitX;
-                g.setPosition(pos.x, pos.y);
-            }
-            float dy = houseExitY - pos.y;
-            if (std::abs(dy) < scaledTileSize * 0.25f) {
-                // Snap to exact tile center at doorway and switch to roaming
-                const int   gridW = level.getWidth();
-                const int   gridH = level.getHeight();
-                const float offX  = (800.f - gridW * scaledTileSize) / 2.f;
-                const float offY  = (600.f - gridH * scaledTileSize) / 2.f;
-                int         curX  = static_cast<int>(std::floor((pos.x - offX) / scaledTileSize));
-                int         curY  = static_cast<int>(std::floor((pos.y - offY) / scaledTileSize));
-                float       cx    = offX + curX * scaledTileSize + scaledTileSize * 0.5f;
-                float       cy    = offY + curY * scaledTileSize + scaledTileSize * 0.5f;
-                g.setPosition(cx, cy);
-                ghostState[idx] = GhostState::Roaming;
-            } else {
-                // Step straight toward exit along Y only
-                float speed = 64.f * 6.f * scale;
-                float step  = std::copysign(speed * dt, dy);
-                // Do not overshoot
-                if (std::abs(step) > std::abs(dy)) step = dy;
-                g.setPosition(pos.x, pos.y + step);
-                return;  // don't run roam logic yet
-            }
-        }
-        // Roaming
-        g.update(dt, level, scaledTileSize, scale, p0, players[0].getFacing(), p1);
-    };
-    updateGhostIfActive(blinky, 0);
-    updateGhostIfActive(pinky, 1);
-    updateGhostIfActive(inky, 2);
-    updateGhostIfActive(clyde, 3);
-
-    // collected pellet deltas for this tick
-    consumedThisTick.clear();
-
-    // Pellet and power-pellet collection and timers
-    auto handlePlayer = [&](int idx) {
-        // Convert position to grid cell
-        const int   gridW    = level.getWidth();
-        const int   gridH    = level.getHeight();
-        const float offX     = (800.f - gridW * scaledTileSize) / 2.f;
-        const float offY     = (600.f - gridH * scaledTileSize) / 2.f;
-        auto        p        = players[idx].getPosition();
-        int         curX     = static_cast<int>(std::floor((p.x - offX) / scaledTileSize));
-        int         curY     = static_cast<int>(std::floor((p.y - offY) / scaledTileSize));
-        TileType    consumed = level.collectPelletTyped(curX, curY);
-        if (consumed == TileType::Pellet) {
-            award(idx, ScoreEvent::Pellet);
-            consumedThisTick.push_back({curX, curY, consumed});
-        } else if (consumed == TileType::PowerPellet) {
-            award(idx, ScoreEvent::PowerPellet);
-            powerTimer[idx] = 10.0f;  // 10 seconds of power
-            // frighten all ghosts for the same duration
-            blinky.setFrightened(10.0f);
-            pinky.setFrightened(10.0f);
-            inky.setFrightened(10.0f);
-            clyde.setFrightened(10.0f);
-            frightenedEatCount[0] = 0;
-            frightenedEatCount[1] = 0;
-            consumedThisTick.push_back({curX, curY, consumed});
-        } else if (consumed == TileType::Cherry) {
-            award(idx, ScoreEvent::Cherry);
-            consumedThisTick.push_back({curX, curY, consumed});
-        }
-        if (powerTimer[idx] > 0.f) {
-            powerTimer[idx] -= dt;
-            if (powerTimer[idx] < 0.f) powerTimer[idx] = 0.f;
-        }
-    };
-    if (deathTimer[0] <= 0.f) handlePlayer(0);
-    if (deathTimer[1] <= 0.f) handlePlayer(1);
-
-    // Check for level completion (all pellets eaten)
-    if (!levelComplete && level.getRemainingPellets() == 0) {
-        levelComplete = true;
+    // --- Resolve lethal collisions ---
+    float colRadius = scaledTileSize * 0.5f * 0.8f;
+    bool  killed    = InteractionResolver::resolveLethal(players, ghosts, colRadius);
+    if (killed) {
+        for (int pi = 0; pi < 2; ++pi)
+            if (!players[pi].isAlive()) gameOver = true;
     }
 
-    handleFrightenedCollisions(scaledTileSize);
+    // --- Update player respawns ---
+    updatePlayerRespawns(dt);
 
-    updateGhostRespawns(dt);
+    // --- Update Pacman logic ---
+    for (int pi = 0; pi < 2; ++pi) {
+        if (!players[pi].isDying()) players[pi].getPacman().update(dt, level, scaledTileSize, scale);
+    }
+
+    // --- Update ghosts ---
+    auto p0    = players[0].getPacman().getPosition();
+    auto p1    = players[1].getPacman().getPosition();
+    auto p0dir = players[0].getPacman().getFacing();
+
+    for (int gi = 0; gi < 4; ++gi) {
+        Ghost& g = *ghosts[gi];
+        if (ghostRespawn[gi] > 0.f) {
+            g.setFrightened(0.f);
+            g.setPosition(houseCenterX, houseCenterY);
+            continue;
+        }
+        if (ghostState[gi] == GhostState::InHouse) {
+            ghostReleaseTimer[gi] -= dt;
+            if (ghostReleaseTimer[gi] <= 0.f) ghostState[gi] = GhostState::Exiting;
+        }
+        if (ghostState[gi] == GhostState::Exiting) {
+            updateGhostExiting(gi, dt, scaledTileSize, scale);
+        }
+        if (ghostState[gi] == GhostState::Roaming) {
+            g.updateLogic(dt, level, scaledTileSize, scale, p0, p0dir, p1);
+        }
+    }
+
+    // --- Pellet collection ---
+    consumedThisTick.clear();
+    float offX, offY;
+    computeOffsets(level, scaledTileSize, offX, offY);
+
+    for (int pi = 0; pi < 2; ++pi) {
+        if (players[pi].isDying()) continue;
+        auto p    = players[pi].getPacman().getPosition();
+        int  curX = static_cast<int>(std::floor((p.x - offX) / scaledTileSize));
+        int  curY = static_cast<int>(std::floor((p.y - offY) / scaledTileSize));
+
+        TileType consumed = level.collectPelletTyped(curX, curY);
+        if (consumed == TileType::Pellet) {
+            players[pi].addScore(POINTS_PELLET);
+            consumedThisTick.push_back({curX, curY, consumed});
+        } else if (consumed == TileType::PowerPellet) {
+            players[pi].addScore(POINTS_POWER_PELLET);
+            players[pi].setPowerTimer(10.0f);
+            players[pi].resetFrightenedEatCount();
+            for (auto& gp : ghosts) gp->setFrightened(10.0f);
+            consumedThisTick.push_back({curX, curY, consumed});
+        } else if (consumed == TileType::Cherry) {
+            players[pi].addScore(POINTS_CHERRY);
+            consumedThisTick.push_back({curX, curY, consumed});
+        }
+
+        players[pi].tickPowerTimer(dt);
+    }
+
+    // --- Level complete ---
+    if (!levelComplete && level.getRemainingPellets() == 0) levelComplete = true;
+
+    // --- Resolve frightened collisions (ghost eating) ---
+    std::vector<GhostEatenEvent> eatenEvents;
+    InteractionResolver::resolveFrightened(players, ghosts, colRadius, ghostHomeX, ghostHomeY, eatenEvents,
+                                           ghostRespawn);
+    for (auto& ev : eatenEvents) {
+        eatenGhostsThisTick.push_back({ev.x, ev.y, ev.points});
+    }
+
+    // --- Update ghost respawn timers ---
+    updateGhostRespawns(dt, scaledTileSize, scale);
+}
+
+void Simulation::updateGhostExiting(int idx, float dt, float scaledTileSize, float scale) {
+    Ghost& ghost = *ghosts[idx];
+    Vec2   pos   = ghost.getPosition();
+
+    // Lock to exit column
+    if (std::abs(pos.x - houseExitX) > 0.01f) {
+        ghost.setPosition(houseExitX, pos.y);
+        pos = ghost.getPosition();
+    }
+
+    float dy = houseExitY - pos.y;
+    if (std::abs(dy) < scaledTileSize * 0.25f) {
+        // Snap to tile and transition to Roaming
+        float offX, offY;
+        computeOffsets(level, scaledTileSize, offX, offY);
+        int   curX = static_cast<int>(std::floor((pos.x - offX) / scaledTileSize));
+        int   curY = static_cast<int>(std::floor((pos.y - offY) / scaledTileSize));
+        float cx   = offX + curX * scaledTileSize + scaledTileSize * 0.5f;
+        float cy   = offY + curY * scaledTileSize + scaledTileSize * 0.5f;
+        ghost.setPosition(cx, cy);
+        ghostState[idx] = GhostState::Roaming;
+    } else {
+        float speed = 64.f * 6.f * scale;
+        float step  = std::copysign(speed * dt, dy);
+        if (std::abs(step) > std::abs(dy)) step = dy;
+        ghost.setPosition(pos.x, pos.y + step);
+    }
 }
 
 PlayerStateView Simulation::getPlayerState(int playerIndex) const {
     PlayerStateView v{};
     if (playerIndex < 0 || playerIndex > 1) return v;
-    auto p          = players[playerIndex].getPosition();
-    v.position      = p;
-    v.facing        = players[playerIndex].getFacing();
-    v.score         = score[playerIndex];
-    v.powered       = powerTimer[playerIndex] > 0.f;
-    v.powerTimeLeft = powerTimer[playerIndex];
-    v.livesLeft     = lives[playerIndex];
-    v.deathTimeLeft = deathTimer[playerIndex];
+    const Player& p = players[playerIndex];
+    v.position      = p.getPacman().getPosition();
+    v.facing        = p.getPacman().getFacing();
+    v.score         = p.getScore();
+    v.powered       = p.isPowered();
+    v.powerTimeLeft = p.getPowerTimer();
+    v.livesLeft     = p.getLives();
+    v.deathTimeLeft = p.getDeathTimer();
     return v;
 }
 
@@ -250,56 +236,14 @@ void Simulation::drainEatenGhosts(std::vector<EatenGhostEvent>& out) {
     eatenGhostsThisTick.clear();
 }
 
-void Simulation::award(int playerIndex, ScoreEvent eventType) {
-    if (playerIndex < 0 || playerIndex > 1) return;
-    switch (eventType) {
-        case ScoreEvent::Pellet:
-            score[playerIndex] += POINTS_PELLET;
-            break;
-        case ScoreEvent::PowerPellet:
-            score[playerIndex] += POINTS_POWER_PELLET;
-            break;
-        case ScoreEvent::Ghost:
-            score[playerIndex] += POINTS_GHOST;
-            break;
-        case ScoreEvent::Cherry:
-            score[playerIndex] += POINTS_CHERRY;
-            break;
-        default:
-            break;
-    }
-}
-
 Vec2 Simulation::getGhostPosition(int ghostIndex) const {
-    switch (ghostIndex) {
-        case 0:
-            return blinky.getPosition();
-        case 1:
-            return pinky.getPosition();
-        case 2:
-            return inky.getPosition();
-        case 3:
-            return clyde.getPosition();
-        default: {
-            Vec2 v{};
-            return v;
-        }
-    }
+    if (ghostIndex < 0 || ghostIndex > 3) return Vec2{};
+    return ghosts[ghostIndex]->getPosition();
 }
 
 Direction Simulation::getGhostFacing(int ghostIndex) const {
-    switch (ghostIndex) {
-        case 0:
-            return blinky.getFacing();
-        case 1:
-            return pinky.getFacing();
-        case 2:
-            return inky.getFacing();
-        case 3:
-            return clyde.getFacing();
-        default:
-            return Direction::None;
-    }
+    if (ghostIndex < 0 || ghostIndex > 3) return Direction::None;
+    return ghosts[ghostIndex]->getFacing();
 }
 
 bool Simulation::isGhostActive(int ghostIndex) const {
@@ -307,19 +251,24 @@ bool Simulation::isGhostActive(int ghostIndex) const {
     return ghostRespawn[ghostIndex] <= 0.f;
 }
 
+bool Simulation::isGhostFrightened(int ghostIndex) const {
+    if (ghostIndex < 0 || ghostIndex > 3) return false;
+    return ghostRespawn[ghostIndex] <= 0.f && ghosts[ghostIndex]->isFrightened();
+}
+
 void Simulation::updatePlayerRespawns(float dt) {
     for (int i = 0; i < 2; ++i) {
-        if (deathTimer[i] > 0.f) {
-            deathTimer[i] -= dt;
-            if (deathTimer[i] <= 0.f) {
-                players[i].setPosition(spawnX[i], spawnY[i]);
-                powerTimer[i] = 0.f;
-            }
+        bool wasDying = players[i].isDying();
+        players[i].tickDeathTimer(dt);
+        // After death timer elapses, reset position to spawn
+        if (wasDying && !players[i].isDying()) {
+            players[i].getPacman().setPosition(players[i].getSpawnX(), players[i].getSpawnY());
+            players[i].getPacman().resetDirection();
         }
     }
 }
 
-void Simulation::updateGhostRespawns(float dt) {
+void Simulation::updateGhostRespawns(float dt, float /*scaledTileSize*/, float /*scale*/) {
     for (int i = 0; i < 4; ++i) {
         if (ghostRespawn[i] > 0.f) {
             ghostRespawn[i] -= dt;
@@ -329,94 +278,5 @@ void Simulation::updateGhostRespawns(float dt) {
                 ghostReleaseTimer[i] = 1.0f + 0.5f * i;
             }
         }
-    }
-}
-
-void Simulation::handleLethalCollisions(float scaledTileSize) {
-    auto lethalCollide = [&](int playerIdx, Vec2 ppos, Vec2 gpos, bool ghostFrightened) {
-        if (ghostFrightened) return;
-        if (deathTimer[playerIdx] > 0.f) return;
-        float radius = scaledTileSize * 0.5f * 0.8f;
-        float dx     = ppos.x - gpos.x;
-        float dy     = ppos.y - gpos.y;
-        if (dx * dx + dy * dy <= radius * radius) {
-            lives[playerIdx]      = std::max(0, lives[playerIdx] - 1);
-            deathTimer[playerIdx] = 3.0f;
-            if (lives[playerIdx] == 0) {
-                gameOver = true;
-            }
-        }
-    };
-    Vec2 p0pos = players[0].getPosition();
-    Vec2 p1pos = players[1].getPosition();
-    lethalCollide(0, p0pos, blinky.getPosition(), blinky.isFrightened());
-    lethalCollide(0, p0pos, pinky.getPosition(), pinky.isFrightened());
-    lethalCollide(0, p0pos, inky.getPosition(), inky.isFrightened());
-    lethalCollide(0, p0pos, clyde.getPosition(), clyde.isFrightened());
-    lethalCollide(1, p1pos, blinky.getPosition(), blinky.isFrightened());
-    lethalCollide(1, p1pos, pinky.getPosition(), pinky.isFrightened());
-    lethalCollide(1, p1pos, inky.getPosition(), inky.isFrightened());
-    lethalCollide(1, p1pos, clyde.getPosition(), clyde.isFrightened());
-}
-
-void Simulation::handleGhostEaten(int playerIdx, int ghostIdx) {
-    static const int values[] = {100, 200, 400, 800, 1600};
-    int&             count    = frightenedEatCount[playerIdx];
-    int              pts      = values[std::min(count, 4)];
-    score[playerIdx] += pts;
-    count++;
-    switch (ghostIdx) {
-        case 0:
-            blinky.setPosition(ghostHomeX, ghostHomeY);
-            blinky.setFrightened(0.f);
-            ghostRespawn[0] = 5.0f;
-            break;
-        case 1:
-            pinky.setPosition(ghostHomeX, ghostHomeY);
-            pinky.setFrightened(0.f);
-            ghostRespawn[1] = 5.0f;
-            break;
-        case 2:
-            inky.setPosition(ghostHomeX, ghostHomeY);
-            inky.setFrightened(0.f);
-            ghostRespawn[2] = 5.0f;
-            break;
-        case 3:
-            clyde.setPosition(ghostHomeX, ghostHomeY);
-            clyde.setFrightened(0.f);
-            ghostRespawn[3] = 5.0f;
-            break;
-        default:
-            break;
-    }
-    eatenGhostsThisTick.push_back({ghostHomeX, ghostHomeY, pts});
-}
-
-void Simulation::handleFrightenedCollisions(float scaledTileSize) {
-    bool anyPowered = (powerTimer[0] > 0.f) || (powerTimer[1] > 0.f);
-    if (!anyPowered) return;
-    auto collideCircle = [](Vec2 p, Vec2 g, float radius) {
-        float dx = p.x - g.x;
-        float dy = p.y - g.y;
-        return (dx * dx + dy * dy) <= (radius * radius);
-    };
-    float radius = scaledTileSize * 0.5f * 0.8f;
-    Vec2  p0pos  = players[0].getPosition();
-    Vec2  p1pos  = players[1].getPosition();
-    if (blinky.isFrightened()) {
-        if (collideCircle(p0pos, blinky.getPosition(), radius)) handleGhostEaten(0, 0);
-        if (collideCircle(p1pos, blinky.getPosition(), radius)) handleGhostEaten(1, 0);
-    }
-    if (pinky.isFrightened()) {
-        if (collideCircle(p0pos, pinky.getPosition(), radius)) handleGhostEaten(0, 1);
-        if (collideCircle(p1pos, pinky.getPosition(), radius)) handleGhostEaten(1, 1);
-    }
-    if (inky.isFrightened()) {
-        if (collideCircle(p0pos, inky.getPosition(), radius)) handleGhostEaten(0, 2);
-        if (collideCircle(p1pos, inky.getPosition(), radius)) handleGhostEaten(1, 2);
-    }
-    if (clyde.isFrightened()) {
-        if (collideCircle(p0pos, clyde.getPosition(), radius)) handleGhostEaten(0, 3);
-        if (collideCircle(p1pos, clyde.getPosition(), radius)) handleGhostEaten(1, 3);
     }
 }

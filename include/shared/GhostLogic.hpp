@@ -1,68 +1,65 @@
 #pragma once
 
+#include <memory>
 #include <utility>
 
 #include "core/LevelManager.hpp"
 #include "shared/GameTypes.hpp"
+#include "shared/IEntity.hpp"
+#include "shared/IGhostAI.hpp"
 
-struct Vec2;
-
-class GhostBase {
+class Ghost : public IEntity {
    public:
-    virtual ~GhostBase() = default;
+    Ghost(std::unique_ptr<IGhostAI> aiStrategy);
+    ~Ghost() override = default;
 
-    void setPosition(float x, float y) {
-        positionX = x;
-        positionY = y;
-    }
-    Vec2      getPosition() const;
-    Direction getFacing() const {
-        return direction;
-    }
+    // IEntity implementation
+    void      update(float dt) override;
+    Vec2      getPosition() const override;
+    void      setPosition(float x, float y) override;
+    Direction getFacing() const override;
 
-    void setFrightened(float seconds) {
-        frightenedTimer = seconds;
-    }
-    bool isFrightened() const {
-        return frightenedTimer > 0.f;
-    }
+    // Ghost specific
+    void setFrightened(float seconds);
+    bool isFrightened() const;
 
-    // Update with simple greedy targeting behavior implemented by derived class
-    void update(float dt, const LevelManager& level, float scaledTileSize, float scale, Vec2 pac0Pos,
-                Direction pac0Facing, Vec2 pac1Pos);
+    // Instead of simple update(dt), Simulation needs to pass context for the AI.
+    // We will provide a specific update method for the ghost logic.
+    void updateLogic(float dt, const LevelManager& level, float scaledTileSize, float scale, Vec2 pac0Pos,
+                     Direction pac0Facing, Vec2 pac1Pos);
 
-   protected:
-    virtual std::pair<int, int> targetTile(const LevelManager& level, float scaledTileSize, Vec2 pac0Pos,
-                                           Direction pac0Facing, Vec2 pac1Pos) const = 0;
-
+   private:
     bool aligned(float tile, float offX, float offY) const;
     bool canMove(Direction dir, const LevelManager& lvl, float tile, float offX, float offY) const;
 
-    float     positionX{0.f}, positionY{0.f};
-    Direction direction{Direction::Left};
-    float     speed{64.f * 5.5f};
-    float     frightenedTimer{0.f};
+    std::unique_ptr<IGhostAI> ai;
+    Vec2                      position{0.f, 0.f};
+    Direction                 direction{Direction::Left};
+    float                     speed{64.f * 5.5f};
+    float                     frightenedTimer{0.f};
 };
 
-// Four concrete ghosts with simple target logic
-class Blinky : public GhostBase {
-   protected:
-    std::pair<int, int> targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2) const override;
+// Implementations of the AI strategies
+class BlinkyAI : public IGhostAI {
+   public:
+    std::pair<int, int> getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2,
+                                      Vec2) const override;
 };
 
-class Pinky : public GhostBase {
-   protected:
-    std::pair<int, int> targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction facing,
-                                   Vec2) const override;
+class PinkyAI : public IGhostAI {
+   public:
+    std::pair<int, int> getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction facing, Vec2,
+                                      Vec2) const override;
 };
 
-class Inky : public GhostBase {
-   protected:
-    std::pair<int, int> targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction,
-                                   Vec2 pac1Pos) const override;
+class InkyAI : public IGhostAI {
+   public:
+    std::pair<int, int> getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2 pac1Pos,
+                                      Vec2) const override;
 };
 
-class Clyde : public GhostBase {
-   protected:
-    std::pair<int, int> targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2) const override;
+class ClydeAI : public IGhostAI {
+   public:
+    std::pair<int, int> getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2,
+                                      Vec2 currentPos) const override;
 };

@@ -1,11 +1,14 @@
 #pragma once
 
+#include <array>
+#include <memory>
 #include <vector>
 
 #include "core/LevelManager.hpp"
 #include "shared/GameTypes.hpp"
 #include "shared/GhostLogic.hpp"
-#include "shared/PacmanLogic.hpp"
+#include "shared/InteractionResolver.hpp"
+#include "shared/Player.hpp"
 
 struct PlayerStateView {
     Vec2      position;
@@ -21,8 +24,7 @@ enum class ScoreEvent { Pellet, PowerPellet, Ghost, Cherry };
 
 static constexpr int POINTS_PELLET       = 10;
 static constexpr int POINTS_POWER_PELLET = 50;
-static constexpr int POINTS_GHOST        = 200;
-static constexpr int POINTS_CHERRY       = 100;  // classic Pac-Man fruit value for Cherry
+static constexpr int POINTS_CHERRY       = 100;
 
 class Simulation {
    public:
@@ -33,7 +35,7 @@ class Simulation {
     // Set desired direction for player index 0 or 1
     void setDesired(int playerIndex, Direction d);
 
-    // Fixed-step update; scale/tiles come from renderer conventions for now
+    // Fixed-step update
     void step(float dt, float scaledTileSize, float scale);
 
     // Accessors
@@ -41,21 +43,20 @@ class Simulation {
     const LevelManager& getLevel() const {
         return level;
     }
-    // Ghost access
+
+    // Ghost access by index [0=Blinky, 1=Pinky, 2=Inky, 3=Clyde]
     Vec2      getGhostPosition(int ghostIndex) const;
     Direction getGhostFacing(int ghostIndex) const;
     bool      isGhostActive(int ghostIndex) const;
+    bool      isGhostFrightened(int ghostIndex) const;
 
     struct ConsumedPellet {
         int      x;
         int      y;
         TileType type;
     };
-    // Moves consumed pellets from the last step into 'out' and clears the internal buffer
     void drainConsumed(std::vector<ConsumedPellet>& out);
 
-    // Award points for a scoring event (e.g., ghost eaten)
-    void award(int playerIndex, ScoreEvent eventType);
     struct EatenGhostEvent {
         float x;
         float y;
@@ -63,46 +64,6 @@ class Simulation {
     };
     void drainEatenGhosts(std::vector<EatenGhostEvent>& out);
 
-   private:
-    enum class GhostState { InHouse, Exiting, Roaming };
-
-    LevelManager level;
-    PacmanLogic  players[2];
-    Blinky       blinky;
-    Pinky        pinky;
-    Inky         inky;
-    Clyde        clyde;
-    bool         initializedPositions{false};
-
-    // Scoring and power status
-    int   score[2]              = {0, 0};
-    float powerTimer[2]         = {0.f, 0.f};
-    int   frightenedEatCount[2] = {0, 0};
-    int   lives[2]              = {3, 3};
-    float deathTimer[2]         = {0.f, 0.f};
-
-    // Ghost home (respawn) position in world coords
-    float ghostHomeX{0.f};
-    float ghostHomeY{0.f};
-    // Ghost house center and exit doorway (world coordinates)
-    float      houseCenterX{0.f};
-    float      houseCenterY{0.f};
-    float      houseExitX{0.f};
-    float      houseExitY{0.f};
-    GhostState ghostState[4] = {GhostState::InHouse, GhostState::InHouse, GhostState::InHouse, GhostState::InHouse};
-    float      ghostReleaseTimer[4] = {0.f, 0.f, 0.f, 0.f};
-    // player spawn positions
-    float spawnX[2]{0.f, 0.f};
-    float spawnY[2]{0.f, 0.f};
-
-    std::vector<ConsumedPellet>  consumedThisTick;
-    std::vector<EatenGhostEvent> eatenGhostsThisTick;
-    float                        ghostRespawn[4] = {0.f, 0.f, 0.f, 0.f};
-
-    bool gameOver{false};
-    bool levelComplete{false};
-
-   public:
     bool isGameOver() const {
         return gameOver;
     }
@@ -111,9 +72,37 @@ class Simulation {
     }
 
    private:
+    enum class GhostState { InHouse, Exiting, Roaming };
+
+    LevelManager level;
+
+    // Players are now proper objects
+    std::array<Player, 2> players = {Player(0), Player(1)};
+
+    // Ghosts as unique_ptr to avoid copy-constructor issues with unique_ptr<IGhostAI>
+    std::array<std::unique_ptr<Ghost>, 4> ghosts;
+
+    bool initializedPositions{false};
+
+    // Ghost house positions
+    float ghostHomeX{0.f};
+    float ghostHomeY{0.f};
+    float houseCenterX{0.f};
+    float houseCenterY{0.f};
+    float houseExitX{0.f};
+    float houseExitY{0.f};
+
+    GhostState ghostState[4] = {GhostState::InHouse, GhostState::InHouse, GhostState::InHouse, GhostState::InHouse};
+    float      ghostReleaseTimer[4]   = {0.f, 0.f, 0.f, 0.f};
+    std::array<float, 4> ghostRespawn = {0.f, 0.f, 0.f, 0.f};
+
+    std::vector<ConsumedPellet>  consumedThisTick;
+    std::vector<EatenGhostEvent> eatenGhostsThisTick;
+
+    bool gameOver{false};
+    bool levelComplete{false};
+
     void updatePlayerRespawns(float dt);
-    void updateGhostRespawns(float dt);
-    void handleLethalCollisions(float scaledTileSize);
-    void handleFrightenedCollisions(float scaledTileSize);
-    void handleGhostEaten(int playerIdx, int ghostIdx);
+    void updateGhostRespawns(float dt, float scaledTileSize, float scale);
+    void updateGhostExiting(int idx, float dt, float scaledTileSize, float scale);
 };

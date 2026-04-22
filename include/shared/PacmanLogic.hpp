@@ -3,11 +3,6 @@
 #include "core/LevelManager.hpp"
 #include "shared/GameTypes.hpp"
 
-struct Vec2 {
-    float x{0.f};
-    float y{0.f};
-};
-
 class PacmanLogic {
    public:
     void setPosition(float x, float y) {
@@ -24,6 +19,10 @@ class PacmanLogic {
     }
     void setDesired(Direction d) {
         if (d != Direction::None) desiredDirection = d;
+    }
+    void resetDirection() {
+        direction        = Direction::None;
+        desiredDirection = Direction::None;
     }
     void update(float dt, LevelManager& level, float scaledTileSize, float scale);
 

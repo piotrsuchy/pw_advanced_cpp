@@ -162,6 +162,12 @@ int main(int argc, char** argv) {
                     << (float)g3.x << (float)g3.y << (sf::Uint8)gf0 << (sf::Uint8)gf1 << (sf::Uint8)gf2
                     << (sf::Uint8)gf3 << static_cast<sf::Uint16>(deltas.size())
                     << static_cast<sf::Uint16>(ghostScores.size());
+                // Per-ghost active + frightened flags (4 bytes each)
+                for (int gi = 0; gi < 4; ++gi) {
+                    bool active    = sim.isGhostActive(gi);
+                    bool frightened = active && sim.isGhostFrightened(gi);
+                    out << (sf::Uint8)(active ? 1 : 0) << (sf::Uint8)(frightened ? 1 : 0);
+                }
                 for (auto& d : deltas) {
                     out << static_cast<sf::Uint16>(d.x) << static_cast<sf::Uint16>(d.y)
                         << static_cast<sf::Uint8>(d.type == TileType::PowerPellet ? 2 : 1);

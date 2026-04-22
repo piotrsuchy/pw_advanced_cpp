@@ -10,10 +10,7 @@ shift || true || true
 
 CONFIG_ARGS=(-S . -B build)
 
-# If running net modes, disable singleplayer target to speed up
-if [[ "$mode" == "localhost" || "$mode" == "server" || "$mode" == "client" ]]; then
-  CONFIG_ARGS+=(-DENABLE_SINGLEPLAYER=OFF)
-fi
+
 
 echo "==> Configuring CMake"
 cmake "${CONFIG_ARGS[@]}"

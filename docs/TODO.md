@@ -18,16 +18,19 @@
 
 ---
 
-## Missing Features
+## Architecture Tasks (from reviewer feedback)
 
-Feedback that I've gotten:
+- [x] **Separate interface from implementation** — `IEntity` and `IGhostAI` are now pure-virtual interfaces; concrete classes implement them
+- [x] **Use polymorphism in Simulation** — `Simulation` uses `std::array<unique_ptr<Ghost>, 4>` with AI injected via strategy pattern
+- [ ] **PowerUps ownership** — Power pellets are still a raw `TileType` in `LevelManager`; needs an `ICollectible` abstraction
+- [x] **Player representation** — `Player.hpp` encapsulates all per-player state (score, lives, timers, spawn, `PacmanLogic`)
+- [ ] **Match / GameSession** — Extract game-phase state (waiting, playing, game-over, level-complete) from `Simulation` into a `Match` class
+- [x] **AI algorithm separation** — Ghost targeting split into `BlinkyAI`, `PinkyAI`, `InkyAI`, `ClydeAI` strategy classes
+- [x] **Interaction/conflict resolution** — `InteractionResolver` handles all lethal and frightened collisions
 
-"""	
-Klasa abstrakcyjna może mieć pola i definicje metod, ale w sumie przyzwoiciej będzie, jak oddzieli Pan interfejs od bazowej implementacji i pozostawi tylko czysto wirtualne metody w interfejsie. Z drugiej strony, po co Panu abstrakcyjna klasa bazowa, jeżeli w Simulation najwyraźniej odwołuje się Pan tylko do klas bazowych? Może jednak skorzystać z polimorfizmu?
-A do czego przynależą PowerUp?
-Proponuję także wydzielić reprezentacje dla gracza, rozgrywanej partii, czy może także algorytmów (grania dla AI).
-Gdzie roztrzygane są konflikty i interakcje pomiędzy obiektami?
-"""
+### Bugs
+
+- [x] **Ghosts render blue (frightened) after being eaten** — fixed: server now sends per-ghost `active` + `frightened` flags in SNAPSHOT; client uses them instead of inferring from player power state
 
 ### Core Gameplay
 
