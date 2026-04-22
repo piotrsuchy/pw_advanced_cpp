@@ -20,7 +20,17 @@
 
 ## Missing Features
 
+Feedback that I've gotten:
+
+"""	
+Klasa abstrakcyjna może mieć pola i definicje metod, ale w sumie przyzwoiciej będzie, jak oddzieli Pan interfejs od bazowej implementacji i pozostawi tylko czysto wirtualne metody w interfejsie. Z drugiej strony, po co Panu abstrakcyjna klasa bazowa, jeżeli w Simulation najwyraźniej odwołuje się Pan tylko do klas bazowych? Może jednak skorzystać z polimorfizmu?
+A do czego przynależą PowerUp?
+Proponuję także wydzielić reprezentacje dla gracza, rozgrywanej partii, czy może także algorytmów (grania dla AI).
+Gdzie roztrzygane są konflikty i interakcje pomiędzy obiektami?
+"""
+
 ### Core Gameplay
+
 - [ ] **Scatter/Chase Mode Cycling** - Classic ghosts alternate between chase and scatter phases on a timer
 - [ ] **Tunnel Wrapping** - Tunnels on left/right edges where Pacman/ghosts wrap around
 - [x] **Level Completion** - Detection for "all pellets eaten" → win condition
@@ -28,11 +38,13 @@
 - [ ] **Ghost Speed in Tunnels** - Ghosts slow down in tunnels
 
 ### Ghost Behavior
+
 - [ ] **Scatter Mode Corners** - Each ghost retreats to their "home corner" during scatter phases
 - [ ] **Direction Reversal on Mode Change** - Ghosts immediately reverse when switching chase↔scatter
 - [ ] **Elroy Mode** - Blinky speeds up when few pellets remain
 
 ### Visual/UI
+
 - [ ] **Lives Display** - Visual icons showing remaining lives
 - [ ] **Ready/Start Screen** - "READY!" text before level starts
 - [ ] **Game Over Screen** - Victory/defeat screen with retry option
@@ -42,14 +54,17 @@
 - [ ] **Level Number Display** - "Level X" indicator
 
 ### Audio
+
 - [ ] **Sound Effects** - Waka-waka, ghost eaten, death, power pellet activation, siren
 - [ ] **Background Music** - Intro jingle, gameplay siren
 
 ### Bonus Items
+
 - [ ] **Dynamic Fruit Spawning** - Fruit appears twice per level at specific pellet counts
 - [ ] **Fruit Variety** - Cherry → Strawberry → Orange → Apple → Melon → Galaxian → Bell → Key
 
 ### Polish
+
 - [ ] **Intermission Cutscenes** - Short animations between certain levels
 - [ ] **Ghost "Eyes" Return** - After being eaten, ghost eyes travel back to house
 - [ ] **Pre-game Ghost Bounce** - Ghosts bounce in house before release
@@ -60,6 +75,7 @@
 ## Suggested Priority Order
 
 ### High Priority (Core Experience)
+
 1. Level completion detection (win condition)
 2. Tunnel wrapping
 3. Scatter/chase mode cycling
@@ -67,15 +83,9 @@
 5. Game over / victory screen
 
 ### Medium Priority (Polish)
-6. Ready screen before level start
-7. Power pellet flash warning
-8. Ghost eyes returning to house
-9. Sound effects
-10. Main menu / pause
 
-### Lower Priority (Full Authenticity)
-11. Multiple levels with difficulty scaling
-12. Dynamic fruit spawning
-13. Elroy mode
-14. High score persistence
-15. Intermissions
+1. Ready screen before level start
+2. Power pellet flash warning
+3. Ghost eyes returning to house
+4. Sound effects
+5. Main menu / pause
