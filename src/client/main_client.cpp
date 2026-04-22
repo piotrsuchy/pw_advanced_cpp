@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     bool      pow0 = false, pow1 = false;
     Direction f0 = Direction::Right, f1 = Direction::Left;
     // Per-ghost state received from server
-    bool ghostActive[4]    = {true, true, true, true};
+    bool ghostActive[4]     = {true, true, true, true};
     bool ghostFrightened[4] = {false, false, false, false};
 
     // HUD font and texts - try loading from some usual positions

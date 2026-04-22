@@ -15,6 +15,7 @@
 | Ghost respawn from house | Working |
 | Cherries (2 fixed positions, 100 pts) | Working |
 | Client/server multiplayer architecture | Working |
+| Tunnel wrapping (left/right edge wrap) | Working |
 
 ---
 
@@ -35,7 +36,7 @@
 ### Core Gameplay
 
 - [ ] **Scatter/Chase Mode Cycling** - Classic ghosts alternate between chase and scatter phases on a timer
-- [ ] **Tunnel Wrapping** - Tunnels on left/right edges where Pacman/ghosts wrap around
+- [x] **Tunnel Wrapping** - Pac-Man and ghosts wrap horizontally through left/right tunnels
 - [x] **Level Completion** - Detection for "all pellets eaten" → win condition
 - [ ] **Level Progression** - Multiple levels with increasing difficulty (faster ghosts, shorter frightened time)
 - [ ] **Ghost Speed in Tunnels** - Ghosts slow down in tunnels
@@ -79,8 +80,8 @@
 
 ### High Priority (Core Experience)
 
-1. Level completion detection (win condition)
-2. Tunnel wrapping
+1. ~~Level completion detection (win condition)~~ ✅
+2. ~~Tunnel wrapping~~ ✅
 3. Scatter/chase mode cycling
 4. Lives display in HUD
 5. Game over / victory screen

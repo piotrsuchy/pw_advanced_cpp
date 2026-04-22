@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
                     << static_cast<sf::Uint16>(ghostScores.size());
                 // Per-ghost active + frightened flags (4 bytes each)
                 for (int gi = 0; gi < 4; ++gi) {
-                    bool active    = sim.isGhostActive(gi);
+                    bool active     = sim.isGhostActive(gi);
                     bool frightened = active && sim.isGhostFrightened(gi);
                     out << (sf::Uint8)(active ? 1 : 0) << (sf::Uint8)(frightened ? 1 : 0);
                 }

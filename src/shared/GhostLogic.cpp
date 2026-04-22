@@ -57,7 +57,8 @@ bool Ghost::canMove(Direction dir, const LevelManager& lvl, float tile, float of
         default:
             break;
     }
-    if (curX < 0 || curY < 0 || curX >= lvl.getWidth() || curY >= lvl.getHeight()) return false;
+    // Only y is a hard boundary; x wraps via LevelManager::getTile()
+    if (curY < 0 || curY >= lvl.getHeight()) return false;
     return lvl.getTile(curX, curY) != TileType::Wall;
 }
 
@@ -92,7 +93,8 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
             if (d == Direction::Down) ++ny;
             if (d == Direction::Left) --nx;
             if (d == Direction::Right) ++nx;
-            if (nx < 0 || ny < 0 || nx >= level.getWidth() || ny >= level.getHeight()) continue;
+            if (ny < 0 || ny >= level.getHeight()) continue;  // y is hard boundary
+            // x wraps via getTile(); don't skip out-of-bounds nx
             if (level.getTile(nx, ny) == TileType::Wall) continue;
             float score = std::abs(tx - nx) + std::abs(ty - ny);
             if (score < bestScore) {
@@ -154,6 +156,12 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
         }
         direction = Direction::None;
     }
+
+    // Tunnel wrap: teleport to opposite side when crossing horizontal boundary
+    const float worldLeft  = offX;
+    const float worldRight = offX + level.getWidth() * scaledTileSize;
+    if (position.x < worldLeft)  position.x += level.getWidth() * scaledTileSize;
+    if (position.x >= worldRight) position.x -= level.getWidth() * scaledTileSize;
 }
 
 // Simple target implementations
