@@ -58,6 +58,9 @@ int main(int argc, char** argv) {
     uint16_t  score0 = 0, score1 = 0;
     bool      pow0 = false, pow1 = false;
     Direction f0 = Direction::Right, f1 = Direction::Left;
+    // Per-ghost state received from server
+    bool ghostActive[4]     = {true, true, true, true};
+    bool ghostFrightened[4] = {false, false, false, false};
 
     // HUD font and texts - try loading from some usual positions
     // if the env variable is not provided
@@ -176,6 +179,13 @@ int main(int argc, char** argv) {
                     in >> ex >> ey >> pts;
                     popups.emplace_back(ex, ey, (int)pts, 0.f);
                 }
+                // Per-ghost active + frightened flags
+                for (int gi = 0; gi < 4; ++gi) {
+                    sf::Uint8 activeFlag, frightenedFlag;
+                    in >> activeFlag >> frightenedFlag;
+                    ghostActive[gi]     = (activeFlag != 0);
+                    ghostFrightened[gi] = (frightenedFlag != 0);
+                }
             } else if (kind == "LEVEL") {
                 // Full level sync from server
                 sf::Uint16 w, h;
@@ -240,12 +250,12 @@ int main(int argc, char** argv) {
         g1.setPosition(gx1, gy1);
         g2.setPosition(gx2, gy2);
         g3.setPosition(gx3, gy3);
-        bool frightened = pow0 || pow1;
-        g0.setFrightened(frightened);
-        g1.setFrightened(frightened);
-        g2.setFrightened(frightened);
-        g3.setFrightened(frightened);
-        // server-authoritative ghost facing
+        // Use per-ghost server-authoritative frightened state (not inferred from player power)
+        g0.setFrightened(ghostFrightened[0]);
+        g1.setFrightened(ghostFrightened[1]);
+        g2.setFrightened(ghostFrightened[2]);
+        g3.setFrightened(ghostFrightened[3]);
+        // Server-authoritative ghost facing
         g0.setFacing(static_cast<Direction>(gf0));
         g1.setFacing(static_cast<Direction>(gf1));
         g2.setFacing(static_cast<Direction>(gf2));

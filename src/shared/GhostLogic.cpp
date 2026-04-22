@@ -3,31 +3,44 @@
 #include <algorithm>
 #include <cmath>
 
-#include "shared/PacmanLogic.hpp"  // for Vec2 forward-decl definition
+Ghost::Ghost(std::unique_ptr<IGhostAI> aiStrategy) : ai(std::move(aiStrategy)) {}
 
-struct Vec2Impl {
-    float x;
-    float y;
-};
-
-Vec2 GhostBase::getPosition() const {
-    Vec2 v;
-    v.x = positionX;
-    v.y = positionY;
-    return v;
+void Ghost::update(float dt) {
+    // Basic update without context. The Simulation/Match will call updateLogic instead.
 }
 
-bool GhostBase::aligned(float tile, float offX, float offY) const {
+Vec2 Ghost::getPosition() const {
+    return position;
+}
+
+void Ghost::setPosition(float x, float y) {
+    position.x = x;
+    position.y = y;
+}
+
+Direction Ghost::getFacing() const {
+    return direction;
+}
+
+void Ghost::setFrightened(float seconds) {
+    frightenedTimer = seconds;
+}
+
+bool Ghost::isFrightened() const {
+    return frightenedTimer > 0.f;
+}
+
+bool Ghost::aligned(float tile, float offX, float offY) const {
     constexpr float eps = 2.f;
-    float           cx  = std::fmod(positionX - offX, tile);
-    float           cy  = std::fmod(positionY - offY, tile);
+    float           cx  = std::fmod(position.x - offX, tile);
+    float           cy  = std::fmod(position.y - offY, tile);
     return (std::abs(cx - tile / 2.f) < eps) && (std::abs(cy - tile / 2.f) < eps);
 }
 
-bool GhostBase::canMove(Direction dir, const LevelManager& lvl, float tile, float offX, float offY) const {
+bool Ghost::canMove(Direction dir, const LevelManager& lvl, float tile, float offX, float offY) const {
     if (dir == Direction::None) return false;
-    int curX = static_cast<int>(std::floor((positionX - offX) / tile));
-    int curY = static_cast<int>(std::floor((positionY - offY) / tile));
+    int curX = static_cast<int>(std::floor((position.x - offX) / tile));
+    int curY = static_cast<int>(std::floor((position.y - offY) / tile));
     switch (dir) {
         case Direction::Up:
             --curY;
@@ -44,12 +57,13 @@ bool GhostBase::canMove(Direction dir, const LevelManager& lvl, float tile, floa
         default:
             break;
     }
-    if (curX < 0 || curY < 0 || curX >= lvl.getWidth() || curY >= lvl.getHeight()) return false;
+    // Only y is a hard boundary; x wraps via LevelManager::getTile()
+    if (curY < 0 || curY >= lvl.getHeight()) return false;
     return lvl.getTile(curX, curY) != TileType::Wall;
 }
 
-void GhostBase::update(float dt, const LevelManager& level, float scaledTileSize, float scale, Vec2 pac0Pos,
-                       Direction pac0Facing, Vec2 pac1Pos) {
+void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSize, float scale, Vec2 pac0Pos,
+                        Direction pac0Facing, Vec2 pac1Pos) {
     const float offX = (800.f - level.getWidth() * scaledTileSize) / 2.f;
     const float offY = (600.f - level.getHeight() * scaledTileSize) / 2.f;
 
@@ -57,9 +71,9 @@ void GhostBase::update(float dt, const LevelManager& level, float scaledTileSize
 
     // Choose a direction when at intersections or standing still
     if (direction == Direction::None || aligned(scaledTileSize, offX, offY)) {
-        auto [tx, ty] = targetTile(level, scaledTileSize, pac0Pos, pac0Facing, pac1Pos);
-        int cx        = static_cast<int>(std::floor((positionX - offX) / scaledTileSize));
-        int cy        = static_cast<int>(std::floor((positionY - offY) / scaledTileSize));
+        auto [tx, ty] = ai->getTargetTile(level, scaledTileSize, pac0Pos, pac0Facing, pac1Pos, position);
+        int cx        = static_cast<int>(std::floor((position.x - offX) / scaledTileSize));
+        int cy        = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
 
         // Try the direction that reduces Manhattan distance; avoid reversing if possible
         Direction candidates[4] = {Direction::Up, Direction::Left, Direction::Down, Direction::Right};
@@ -79,7 +93,8 @@ void GhostBase::update(float dt, const LevelManager& level, float scaledTileSize
             if (d == Direction::Down) ++ny;
             if (d == Direction::Left) --nx;
             if (d == Direction::Right) ++nx;
-            if (nx < 0 || ny < 0 || nx >= level.getWidth() || ny >= level.getHeight()) continue;
+            if (ny < 0 || ny >= level.getHeight()) continue;  // y is hard boundary
+            // x wraps via getTile(); don't skip out-of-bounds nx
             if (level.getTile(nx, ny) == TileType::Wall) continue;
             float score = std::abs(tx - nx) + std::abs(ty - ny);
             if (score < bestScore) {
@@ -103,48 +118,55 @@ void GhostBase::update(float dt, const LevelManager& level, float scaledTileSize
     float v = (isFrightened() ? (speed * 0.6f) : speed) * scale;
     switch (direction) {
         case Direction::Up:
-            positionY -= v * dt;
+            position.y -= v * dt;
             break;
         case Direction::Down:
-            positionY += v * dt;
+            position.y += v * dt;
             break;
         case Direction::Left:
-            positionX -= v * dt;
+            position.x -= v * dt;
             break;
         case Direction::Right:
-            positionX += v * dt;
+            position.x += v * dt;
             break;
         default:
             break;
     }
 
     // Clamp to non-walls
-    int tileX = static_cast<int>(std::floor((positionX - offX) / scaledTileSize));
-    int tileY = static_cast<int>(std::floor((positionY - offY) / scaledTileSize));
+    int tileX = static_cast<int>(std::floor((position.x - offX) / scaledTileSize));
+    int tileY = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
     if (level.getTile(tileX, tileY) == TileType::Wall) {
         // back off and stop
         switch (direction) {
             case Direction::Up:
-                positionY += v * dt;
+                position.y += v * dt;
                 break;
             case Direction::Down:
-                positionY -= v * dt;
+                position.y -= v * dt;
                 break;
             case Direction::Left:
-                positionX += v * dt;
+                position.x += v * dt;
                 break;
             case Direction::Right:
-                positionX -= v * dt;
+                position.x -= v * dt;
                 break;
             default:
                 break;
         }
         direction = Direction::None;
     }
+
+    // Tunnel wrap: teleport to opposite side when crossing horizontal boundary
+    const float worldLeft  = offX;
+    const float worldRight = offX + level.getWidth() * scaledTileSize;
+    if (position.x < worldLeft)  position.x += level.getWidth() * scaledTileSize;
+    if (position.x >= worldRight) position.x -= level.getWidth() * scaledTileSize;
 }
 
 // Simple target implementations
-std::pair<int, int> Blinky::targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2) const {
+std::pair<int, int> BlinkyAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2,
+                                            Vec2) const {
     // Aim directly at player 0
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
@@ -153,8 +175,8 @@ std::pair<int, int> Blinky::targetTile(const LevelManager& level, float tile, Ve
     return {tx, ty};
 }
 
-std::pair<int, int> Pinky::targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction facing,
-                                      Vec2) const {
+std::pair<int, int> PinkyAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction facing, Vec2,
+                                           Vec2) const {
     // Aim four tiles ahead of player 0
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
@@ -172,8 +194,8 @@ std::pair<int, int> Pinky::targetTile(const LevelManager& level, float tile, Vec
     return {std::clamp(tx + dx, 0, level.getWidth() - 1), std::clamp(ty + dy, 0, level.getHeight() - 1)};
 }
 
-std::pair<int, int> Inky::targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction,
-                                     Vec2 pac1Pos) const {
+std::pair<int, int> InkyAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2 pac1Pos,
+                                          Vec2) const {
     // Aim roughly between players
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
@@ -184,14 +206,15 @@ std::pair<int, int> Inky::targetTile(const LevelManager& level, float tile, Vec2
     return {std::clamp(tx, 0, level.getWidth() - 1), std::clamp(ty, 0, level.getHeight() - 1)};
 }
 
-std::pair<int, int> Clyde::targetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2) const {
+std::pair<int, int> ClydeAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2,
+                                           Vec2 currentPos) const {
     // If close, run to a corner; else chase
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
     int   tx   = static_cast<int>(std::floor((pac0Pos.x - offX) / tile));
     int   ty   = static_cast<int>(std::floor((pac0Pos.y - offY) / tile));
-    int   cx   = static_cast<int>(std::floor((positionX - offX) / tile));
-    int   cy   = static_cast<int>(std::floor((positionY - offY) / tile));
+    int   cx   = static_cast<int>(std::floor((currentPos.x - offX) / tile));
+    int   cy   = static_cast<int>(std::floor((currentPos.y - offY) / tile));
     int   dist = std::abs(tx - cx) + std::abs(ty - cy);
     if (dist < 6) return {1, level.getHeight() - 2};
     return {tx, ty};

@@ -57,6 +57,11 @@ void PacmanLogic::update(float dt, LevelManager& level, float scaledTileSize, fl
     int tileY = static_cast<int>(std::floor((next.y - offY) / scaledTileSize));
     if (level.getTile(tileX, tileY) != TileType::Wall) {
         position = next;
+        // Tunnel wrap: if position has crossed the horizontal boundary, teleport to other side
+        const float worldLeft  = offX;
+        const float worldRight = offX + level.getWidth() * scaledTileSize;
+        if (position.x < worldLeft)  position.x += level.getWidth() * scaledTileSize;
+        if (position.x >= worldRight) position.x -= level.getWidth() * scaledTileSize;
     } else {
         direction        = Direction::None;
         desiredDirection = Direction::None;
@@ -101,7 +106,8 @@ bool PacmanLogic::canMove(Direction dir, const LevelManager& lvl, float tile, fl
         default:
             break;
     }
-    if (curX < 0 || curY < 0 || curX >= lvl.getWidth() || curY >= lvl.getHeight()) return false;
+    // Only y is a hard boundary; x wraps via LevelManager::getTile()
+    if (curY < 0 || curY >= lvl.getHeight()) return false;
     return lvl.getTile(curX, curY) != TileType::Wall;
 }
 

@@ -65,6 +65,7 @@ _deps/
 
 # pdf file
 *.pdf
+temp-prompt.md
 
 # bash scripts
 show_all_files.sh

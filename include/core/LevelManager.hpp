@@ -21,9 +21,13 @@ class LevelManager {
     }
 
     TileType getTile(int x, int y) const {
-        if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) {
-            return TileType::Wall;  // treat out-of-bounds as walls
+        if (y < 0 || y >= getHeight()) {
+            return TileType::Wall;  // vertical out-of-bounds is a wall
         }
+        const int w = getWidth();
+        if (w == 0) return TileType::Wall;
+        // Wrap x horizontally — enables tunnel traversal
+        x = ((x % w) + w) % w;
         return grid[y][x];
     }
     void setTile(int x, int y, TileType type) {
