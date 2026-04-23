@@ -160,7 +160,7 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
     // Tunnel wrap: teleport to opposite side when crossing horizontal boundary
     const float worldLeft  = offX;
     const float worldRight = offX + level.getWidth() * scaledTileSize;
-    if (position.x < worldLeft)  position.x += level.getWidth() * scaledTileSize;
+    if (position.x < worldLeft) position.x += level.getWidth() * scaledTileSize;
     if (position.x >= worldRight) position.x -= level.getWidth() * scaledTileSize;
 }
 

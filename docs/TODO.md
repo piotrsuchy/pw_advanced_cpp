@@ -19,6 +19,8 @@
 
 ---
 
+- [x] **Refactor `main_client.cpp` / `main_server.cpp`** — extracted into `GameClient` and `Server` classes; `main_*` files are now thin arg-parsing wrappers
+
 ## Architecture Tasks (from reviewer feedback)
 
 - [x] **Separate interface from implementation** — `IEntity` and `IGhostAI` are now pure-virtual interfaces; concrete classes implement them
