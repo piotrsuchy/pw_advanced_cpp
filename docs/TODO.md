@@ -21,13 +21,8 @@
 
 ### Architecture Tasks (from reviewer feedback)
 
-- [x] **PowerUps ownership** — `ICollectible` abstraction for map pickups
-- [ ] **Match / GameSession** — Extract game-phase state (waiting, playing, game-over, level-complete) from `Simulation` into a `Match` class
-
 ### Core Gameplay
 
-- [ ] **Ghosts should blink from blue to white** for the last few seconds of the being frightened.
-- [ ] **Level Progression** - Multiple levels with increasing difficulty (faster ghosts, shorter frightened time)
 - [ ] **Ghost Speed in Tunnels** - Ghosts slow down in tunnels
 
 ### Ghost Behavior
@@ -85,6 +80,7 @@
 
 ## DONE
 
+- [x] **Match / `MatchPhase`** — `Match` holds flow (`Waiting`, `Playing`, `LevelComplete`, `GameOver`); `GameServer` calls `updateAfterStep` after each tick. `Simulation` exposes `isMatchLost()` / `isLevelCleared()`; win/lose flags no longer live on `Simulation`
 - [x] **PowerUps / `ICollectible`** — Collectibles (pellet, power pellet, cherry) are described by `ICollectible` with points, power duration, level-clear counting, and network clear tags; `Simulation` no longer branches on `TileType` for scoring
 - [x] **Refactor `main_client.cpp` / `main_server.cpp`** — extracted into `GameClient` and `Server` classes; `main_*` files are now thin arg-parsing wrappers
 - [x] **Separate interface from implementation** — `IEntity` and `IGhostAI` are now pure-virtual interfaces; concrete classes implement them

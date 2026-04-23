@@ -5,11 +5,12 @@
 #include <chrono>
 #include <memory>
 
+#include "shared/Match.hpp"
 #include "shared/Simulation.hpp"
 
 // Encapsulates the authoritative game server:
 //   - Accepts up to 2 TCP clients
-//   - Drives Simulation at a fixed tick rate
+//   - Drives Simulation at a fixed tick rate; Match tracks game phase (playing / over / level clear)
 //   - Broadcasts SNAPSHOT packets each tick
 //   - Sends the full LEVEL packet on connect
 class GameServer {
@@ -39,6 +40,7 @@ class GameServer {
     sf::SocketSelector                            selector_;
 
     Simulation                            sim_;
+    Match                                 match_;
     std::chrono::steady_clock::time_point lastTick_;
     std::chrono::milliseconds             stepDuration_;
 };

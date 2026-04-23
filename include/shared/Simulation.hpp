@@ -62,12 +62,10 @@ class Simulation {
     };
     void drainEatenGhosts(std::vector<EatenGhostEvent>& out);
 
-    bool isGameOver() const {
-        return gameOver;
-    }
-    bool isLevelComplete() const {
-        return levelComplete;
-    }
+    /// At least one player has no lives (match cannot continue).
+    bool isMatchLost() const;
+    /// All clearable pellets on the current level are gone.
+    bool isLevelCleared() const;
 
    private:
     enum class GhostState { InHouse, Exiting, Roaming };
@@ -96,9 +94,6 @@ class Simulation {
 
     std::vector<ConsumedPellet>  consumedThisTick;
     std::vector<EatenGhostEvent> eatenGhostsThisTick;
-
-    bool gameOver{false};
-    bool levelComplete{false};
 
     // ── Scatter / Chase cycling ───────────────────────────────────────────
     // Phase durations (seconds): scatter, chase, scatter, chase, scatter, chase, scatter, then infinite chase.

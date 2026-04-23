@@ -103,11 +103,7 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
 
     // --- Resolve lethal collisions ---
     float colRadius = scaledTileSize * 0.5f * 0.8f;
-    bool  killed    = InteractionResolver::resolveLethal(players, ghosts, colRadius);
-    if (killed) {
-        for (int pi = 0; pi < 2; ++pi)
-            if (!players[pi].isAlive()) gameOver = true;
-    }
+    InteractionResolver::resolveLethal(players, ghosts, colRadius);
 
     // --- Update player respawns ---
     updatePlayerRespawns(dt);
@@ -169,9 +165,6 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
 
         players[pi].tickPowerTimer(dt);
     }
-
-    // --- Level complete ---
-    if (!levelComplete && level.getRemainingPellets() == 0) levelComplete = true;
 
     // --- Resolve frightened collisions (ghost eating) ---
     std::vector<GhostEatenEvent> eatenEvents;
@@ -281,6 +274,17 @@ void Simulation::updateGhostRespawns(float dt, float /*scaledTileSize*/, float /
             }
         }
     }
+}
+
+bool Simulation::isMatchLost() const {
+    for (int i = 0; i < 2; ++i) {
+        if (!players[i].isAlive()) return true;
+    }
+    return false;
+}
+
+bool Simulation::isLevelCleared() const {
+    return level.getRemainingPellets() == 0;
 }
 
 void Simulation::updateGhostMode(float dt) {

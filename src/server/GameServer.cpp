@@ -103,12 +103,13 @@ void GameServer::processClientInputs() {
 
 void GameServer::tick() {
     sim_.step(1.f / tickHz_, scaledTile_, scale_);
+    match_.updateAfterStep(sim_);
 
-    if (sim_.isGameOver()) {
+    if (match_.isGameOver()) {
         std::cout << "[SERVER] Game over.\n";
         std::exit(0);
     }
-    if (sim_.isLevelComplete()) {
+    if (match_.isLevelComplete()) {
         std::cout << "[SERVER] Level complete!\n";
         std::exit(0);
     }
