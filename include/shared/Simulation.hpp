@@ -8,6 +8,7 @@
 #include "core/LevelManager.hpp"
 
 class ICollectible;
+#include "shared/EventQueue.hpp"
 #include "shared/GameTypes.hpp"
 #include "shared/GhostLogic.hpp"
 #include "shared/InteractionResolver.hpp"
@@ -141,6 +142,8 @@ class Simulation {
     /**
      * @brief Moves consumed-collectible events into an output vector.
      *
+     * Drains the internal `EventQueue<ConsumedPellet>` for the current tick.
+     *
      * @param out Destination vector receiving the drained events.
      */
     void drainConsumed(std::vector<ConsumedPellet>& out);
@@ -156,6 +159,8 @@ class Simulation {
 
     /**
      * @brief Moves ghost-eaten events into an output vector.
+     *
+     * Drains the internal `EventQueue<EatenGhostEvent>` for the current tick.
      *
      * @param out Destination vector receiving the drained events.
      */
@@ -173,12 +178,16 @@ class Simulation {
     /**
      * @brief Moves pending grid tile updates into an output vector.
      *
+     * Drains the internal `EventQueue<GridTileUpdate>` for the current tick.
+     *
      * @param out Destination vector receiving the drained tile changes.
      */
     void drainGridTileUpdates(std::vector<GridTileUpdate>& out);
 
     /**
      * @brief Moves fruit score popup events into an output vector.
+     *
+     * Drains the internal `EventQueue<EatenGhostEvent>` used for fruit score popups.
      *
      * @param out Destination vector receiving the drained fruit popup events.
      */
@@ -223,10 +232,10 @@ class Simulation {
     float      ghostReleaseTimer[4]   = {0.f, 0.f, 0.f, 0.f};
     std::array<float, 4> ghostRespawn = {0.f, 0.f, 0.f, 0.f};
 
-    std::vector<ConsumedPellet>  consumedThisTick;
-    std::vector<EatenGhostEvent> eatenGhostsThisTick;
-    std::vector<GridTileUpdate>  gridTileUpdatesThisTick;
-    std::vector<EatenGhostEvent> fruitPopupsThisTick;
+    EventQueue<ConsumedPellet>  consumedThisTick;       ///< Buffered collectible removals for the current tick.
+    EventQueue<EatenGhostEvent> eatenGhostsThisTick;    ///< Buffered frightened-ghost score popups.
+    EventQueue<GridTileUpdate>  gridTileUpdatesThisTick;  ///< Buffered server-authored tile mutations.
+    EventQueue<EatenGhostEvent> fruitPopupsThisTick;    ///< Buffered bonus-fruit score popups.
 
     int  currentLevel_{1};
     int  initialStartingPellets_{0};

@@ -17,6 +17,8 @@ The main interface for building and running the game is the `rebuild_and_run.sh`
 ./rebuild_and_run.sh client [--ip <addr> --port <num>]
 ```
 
+To host the server on an Ubuntu 24 VM, first install dependencies with `./scripts/install_deps_ubuntu.sh`, then start the server with `./rebuild_and_run.sh server` (or `./rebuild_and_run.sh server --port 54000` for an explicit port). From another machine, connect the client to the VM using its IP address, for example `./rebuild_and_run.sh client --ip <VM_IP> --port 54000`.
+
 ## Formatting and Linting
 
 The project uses a Google-based style with 4-space indentation and 120 column limit. `clang-format` and `clang-tidy` rules are defined in `.clang-format` and `.clang-tidy` files at the root.

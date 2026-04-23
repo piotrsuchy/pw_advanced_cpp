@@ -205,9 +205,9 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             if (!c->countsTowardLevelPelletTotal() && c->frightenedModeDuration() <= 0.f) {
                 const float fcx = offX + curX * scaledTileSize + scaledTileSize * 0.5f;
                 const float fcy = offY + curY * scaledTileSize + scaledTileSize * 0.5f;
-                fruitPopupsThisTick.push_back({fcx, fcy, c->points()});
+                fruitPopupsThisTick.push({fcx, fcy, c->points()});
             }
-            consumedThisTick.push_back({curX, curY, c});
+            consumedThisTick.push({curX, curY, c});
         }
 
         players[pi].tickPowerTimer(dt);
@@ -220,7 +220,7 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
     InteractionResolver::resolveFrightened(players, ghosts, colRadius, ghostHomeX, ghostHomeY, eatenEvents,
                                            ghostRespawn);
     for (auto& ev : eatenEvents) {
-        eatenGhostsThisTick.push_back({ev.x, ev.y, ev.points});
+        eatenGhostsThisTick.push({ev.x, ev.y, ev.points});
     }
 
     // --- Update ghost respawn timers ---
@@ -271,23 +271,19 @@ PlayerStateView Simulation::getPlayerState(int playerIndex) const {
 }
 
 void Simulation::drainConsumed(std::vector<ConsumedPellet>& out) {
-    out = std::move(consumedThisTick);
-    consumedThisTick.clear();
+    consumedThisTick.drainTo(out);
 }
 
 void Simulation::drainEatenGhosts(std::vector<EatenGhostEvent>& out) {
-    out = std::move(eatenGhostsThisTick);
-    eatenGhostsThisTick.clear();
+    eatenGhostsThisTick.drainTo(out);
 }
 
 void Simulation::drainGridTileUpdates(std::vector<GridTileUpdate>& out) {
-    out = std::move(gridTileUpdatesThisTick);
-    gridTileUpdatesThisTick.clear();
+    gridTileUpdatesThisTick.drainTo(out);
 }
 
 void Simulation::drainFruitPopups(std::vector<EatenGhostEvent>& out) {
-    out = std::move(fruitPopupsThisTick);
-    fruitPopupsThisTick.clear();
+    fruitPopupsThisTick.drainTo(out);
 }
 
 void Simulation::updateFruitSpawns() {
@@ -306,8 +302,8 @@ void Simulation::updateFruitSpawns() {
         if (level.getTile(x, y) == TileType::Empty) {
             fruit70Processed_ = true;
             level.setTile(x, y, fruit);
-            gridTileUpdatesThisTick.push_back({static_cast<std::uint16_t>(x), static_cast<std::uint16_t>(y),
-                                               static_cast<std::uint8_t>(static_cast<int>(fruit))});
+            gridTileUpdatesThisTick.push({static_cast<std::uint16_t>(x), static_cast<std::uint16_t>(y),
+                                          static_cast<std::uint8_t>(static_cast<int>(fruit))});
         }
     }
     if (!fruit170Processed_ && eaten >= kSecondMilestone) {
@@ -317,8 +313,8 @@ void Simulation::updateFruitSpawns() {
         if (level.getTile(x, y) == TileType::Empty) {
             fruit170Processed_ = true;
             level.setTile(x, y, fruit);
-            gridTileUpdatesThisTick.push_back({static_cast<std::uint16_t>(x), static_cast<std::uint16_t>(y),
-                                               static_cast<std::uint8_t>(static_cast<int>(fruit))});
+            gridTileUpdatesThisTick.push({static_cast<std::uint16_t>(x), static_cast<std::uint16_t>(y),
+                                          static_cast<std::uint8_t>(static_cast<int>(fruit))});
         }
     }
 }
