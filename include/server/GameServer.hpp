@@ -10,6 +10,7 @@
 
 // Encapsulates the authoritative game server:
 //   - Accepts up to 2 TCP clients
+//   - Match starts in Waiting: no simulation steps until every connected client sends PLAYER_READY
 //   - Drives Simulation at a fixed tick rate; Match tracks game phase (playing / over / level clear)
 //   - Broadcasts SNAPSHOT packets each tick
 //   - Sends the full LEVEL packet on connect
@@ -26,6 +27,8 @@ class GameServer {
     void tick();
     void resetMatch();
     void broadcastLevelToAll();
+    void tryStartRoundAfterReady();
+    void onClientDisconnected(int slot);
 
     sf::Packet buildLevelPacket() const;
     sf::Packet buildSnapshotPacket(const std::vector<Simulation::ConsumedPellet>&  consumed,
@@ -42,7 +45,8 @@ class GameServer {
     sf::SocketSelector                            selector_;
 
     Simulation                            sim_;
-    Match                                 match_;
+    Match                                 match_{MatchPhase::Waiting};
+    std::array<bool, 2>                   playerReady_{false, false};
     bool                                  simPaused_{false};
     std::chrono::steady_clock::time_point lastTick_;
     std::chrono::milliseconds             stepDuration_;

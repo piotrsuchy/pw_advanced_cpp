@@ -76,6 +76,7 @@ class GameClient {
     SubMenu     subMenu_{SubMenu::None};
     int         mainMenuIndex_{0};
     float       readyTimer_{0.f};
+    bool        playerReadySent_{false};
     bool        haveLevel_{false};
     std::string menuError_;
     float       menuErrorTime_{0.f};

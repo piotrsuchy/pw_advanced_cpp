@@ -3,7 +3,7 @@
 ## What's Implemented
 
 | Feature | Status |
-|---------|--------|
+| --- | --- |
 | Basic movement & collision | Working |
 | 4 ghosts with distinct AI (Blinky, Pinky, Inky, Clyde) | Working |
 | Lives system (3 lives) | Working |
@@ -23,10 +23,6 @@
 | Power pellet end flash (ghosts blue/white in last 3s) | Working |
 
 ---
-
-## BUG
-
-- server starts the game and on connect the client can move after ready screen, but the game has already started and ghosts moved in already for example - fix it, the game should start after client joins / both clients join
 
 ### Audio
 
@@ -80,3 +76,4 @@
 - [x] **Scatter corners & chase↔scatter reverse** — Already implemented via per-ghost `getScatterTile()` and `updateGhostMode()` reversing roaming non-frightened ghosts
 - [x] **Cruise Elroy (Blinky)** — `Simulation` passes `cruiseElroyChaseSpeedMul` into `Ghost::updateLogic` for slot 0 only in chase when not frightened; tiers at 20 and 10 remaining pellets
 - [x] **Power pellet flash warning** — `SNAPSHOT` sends `powerTimeLeft` per player; client uses `max(P0,P1)` in the last **3s** to toggle `GhostRenderer::setFrightenedEndFlash` and alternate `ghosts_power_pellet_1/2` textures (~2.5 Hz); non-textured fallback toggles blue/white
+- [x] **Server starts the game** and on connect the client can move after ready screen, but the game has already started and ghosts moved in already - the game should start after client joins / both clients join.

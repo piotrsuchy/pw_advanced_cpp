@@ -67,6 +67,7 @@ void GameServer::acceptConnections() {
     sock->setBlocking(false);
     clients_[freeIdx]   = std::move(sock);
     connected_[freeIdx] = true;
+    playerReady_[freeIdx] = false;
     selector_.add(*clients_[freeIdx]);
     std::cout << "[SERVER] Client connected in slot " << freeIdx << "\n";
 
@@ -90,6 +91,11 @@ void GameServer::processClientInputs() {
                 sf::Uint8  dir;
                 in >> seq >> dir;
                 sim_.setDesired(i, static_cast<Direction>(dir));
+            } else if (kind == "PLAYER_READY") {
+                if (!playerReady_[i]) {
+                    playerReady_[i] = true;
+                    tryStartRoundAfterReady();
+                }
             } else if (kind == "PAUSE" && match_.phase() == MatchPhase::Playing) {
                 simPaused_ = !simPaused_;
             } else if (kind == "RESTART" && (match_.isGameOver() || match_.isLevelComplete())) {
@@ -99,8 +105,7 @@ void GameServer::processClientInputs() {
             selector_.remove(*clients_[i]);
             clients_[i]->disconnect();
             clients_[i].reset();
-            connected_[i] = false;
-            std::cout << "[SERVER] Client " << i << " disconnected\n";
+            onClientDisconnected(i);
         }
     }
 }
@@ -108,9 +113,41 @@ void GameServer::processClientInputs() {
 void GameServer::resetMatch() {
     simPaused_ = false;
     sim_.resetForNewMatch(1);
-    match_.resetToPlaying();
-    std::cout << "[SERVER] Match restarted.\n";
+    match_.resetToWaiting();
+    playerReady_ = {};
+    std::cout << "[SERVER] Match restarted (waiting for PLAYER_READY).\n";
     broadcastLevelToAll();
+}
+
+void GameServer::tryStartRoundAfterReady() {
+    if (match_.phase() != MatchPhase::Waiting) return;
+
+    bool anyConnected = false;
+    for (int j = 0; j < 2; ++j) {
+        if (!connected_[j]) continue;
+        anyConnected = true;
+        if (!playerReady_[j]) return;
+    }
+    if (!anyConnected) return;
+
+    match_.beginFromWaiting();
+    std::cout << "[SERVER] All connected players ready — round live.\n";
+}
+
+void GameServer::onClientDisconnected(int slot) {
+    connected_[slot]     = false;
+    playerReady_[slot] = false;
+    std::cout << "[SERVER] Client " << slot << " disconnected\n";
+
+    if (!connected_[0] && !connected_[1]) {
+        simPaused_ = false;
+        sim_.resetForNewMatch(1);
+        match_.resetToWaiting();
+        playerReady_ = {};
+        std::cout << "[SERVER] No clients — lobby reset.\n";
+    } else {
+        tryStartRoundAfterReady();
+    }
 }
 
 void GameServer::broadcastLevelToAll() {
@@ -122,7 +159,8 @@ void GameServer::broadcastLevelToAll() {
 }
 
 void GameServer::tick() {
-    const bool inActiveRound = (match_.phase() == MatchPhase::Playing) && !simPaused_;
+    const bool anyClient     = connected_[0] || connected_[1];
+    const bool inActiveRound = anyClient && (match_.phase() == MatchPhase::Playing) && !simPaused_;
     if (inActiveRound) {
         sim_.step(1.f / tickHz_, scaledTile_, scale_);
         match_.updateAfterStep(sim_);

@@ -26,6 +26,9 @@ class Match {
     void resetToPlaying() {
         phase_ = MatchPhase::Playing;
     }
+    void resetToWaiting() {
+        phase_ = MatchPhase::Waiting;
+    }
     void beginFromWaiting() {
         if (phase_ == MatchPhase::Waiting) phase_ = MatchPhase::Playing;
     }

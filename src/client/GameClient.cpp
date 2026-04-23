@@ -143,6 +143,12 @@ void GameClient::run() {
         if (readyTimer_ > 0.f) readyTimer_ -= dt;
 
         receivePackets();
+
+        if (flow_ == ClientFlow::InGame && haveLevel_ && readyTimer_ <= 0.f && matchOutcome_ == 0 && !playerReadySent_) {
+            sendSimplePacket("PLAYER_READY");
+            playerReadySent_ = true;
+        }
+
         sendInput();
         updateAnimations(dt);
         render();
@@ -166,8 +172,9 @@ void GameClient::disconnectToMenu() {
     subMenu_      = SubMenu::None;
     serverPaused_ = false;
     matchOutcome_ = 0;
-    readyTimer_   = 0.f;
-    haveLevel_    = false;
+    readyTimer_       = 0.f;
+    playerReadySent_  = false;
+    haveLevel_        = false;
     popups_.clear();
     seq_      = 0;
     lastSent_ = Direction::None;
@@ -349,9 +356,10 @@ void GameClient::processLevel(sf::Packet& pkt) {
             level_.setTile(x, y, t);
         }
     }
-    haveLevel_  = true;
-    readyTimer_ = kReadySeconds;
-    lastSent_   = Direction::None;
+    haveLevel_         = true;
+    readyTimer_        = kReadySeconds;
+    playerReadySent_   = false;
+    lastSent_          = Direction::None;
     input_.clearQueuedDirection();
     matchOutcome_ = 0;
     serverPaused_ = false;
