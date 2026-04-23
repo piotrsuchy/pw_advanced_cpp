@@ -182,10 +182,14 @@ void GameServer::tick() {
 
     std::vector<Simulation::ConsumedPellet>  consumed;
     std::vector<Simulation::EatenGhostEvent> ghostScores;
+    std::vector<Simulation::GridTileUpdate>  gridUpdates;
+    std::vector<Simulation::EatenGhostEvent> fruitPopups;
     sim_.drainConsumed(consumed);
     sim_.drainEatenGhosts(ghostScores);
+    sim_.drainGridTileUpdates(gridUpdates);
+    sim_.drainFruitPopups(fruitPopups);
 
-    sf::Packet snap = buildSnapshotPacket(consumed, ghostScores);
+    sf::Packet snap = buildSnapshotPacket(consumed, ghostScores, gridUpdates, fruitPopups);
 
     for (int i = 0; i < 2; ++i) {
         if (!connected_[i]) continue;
@@ -201,24 +205,17 @@ sf::Packet GameServer::buildLevelPacket() const {
     pkt << static_cast<sf::Uint16>(w) << static_cast<sf::Uint16>(h);
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
-            auto      t = sim_.getLevel().getTile(x, y);
-            sf::Uint8 v = 0;
-            if (t == TileType::Wall)
-                v = 1;
-            else if (t == TileType::Pellet)
-                v = 2;
-            else if (t == TileType::PowerPellet)
-                v = 3;
-            else if (t == TileType::Cherry)
-                v = 4;
-            pkt << v;
+            auto t = sim_.getLevel().getTile(x, y);
+            pkt << static_cast<sf::Uint8>(static_cast<int>(t));
         }
     }
     return pkt;
 }
 
 sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::ConsumedPellet>&  consumed,
-                                           const std::vector<Simulation::EatenGhostEvent>& ghostScores) {
+                                           const std::vector<Simulation::EatenGhostEvent>& ghostScores,
+                                           const std::vector<Simulation::GridTileUpdate>&  gridUpdates,
+                                           const std::vector<Simulation::EatenGhostEvent>& fruitPopups) {
     auto s0 = sim_.getPlayerState(0);
     auto s1 = sim_.getPlayerState(1);
 
@@ -241,8 +238,9 @@ sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::Consume
         pkt << (sf::Uint8)sim_.getGhostFacing(gi);
     }
 
-    // Consumed pellet count + ghost score event count
-    pkt << static_cast<sf::Uint16>(consumed.size()) << static_cast<sf::Uint16>(ghostScores.size());
+    // Consumed pellet count + ghost score + grid paints + fruit popups
+    pkt << static_cast<sf::Uint16>(consumed.size()) << static_cast<sf::Uint16>(ghostScores.size())
+        << static_cast<sf::Uint16>(gridUpdates.size()) << static_cast<sf::Uint16>(fruitPopups.size());
 
     // Per-ghost active + frightened flags
     for (int gi = 0; gi < 4; ++gi) {
@@ -260,6 +258,15 @@ sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::Consume
     // Ghost-eat score popups
     for (auto& ge : ghostScores) {
         pkt << (float)ge.x << (float)ge.y << (sf::Uint16)ge.points;
+    }
+
+    // Server-placed bonus fruit (or other) tiles this tick
+    for (const auto& gu : gridUpdates) {
+        pkt << gu.x << gu.y << gu.tile;
+    }
+
+    for (const auto& fe : fruitPopups) {
+        pkt << (float)fe.x << (float)fe.y << (sf::Uint16)fe.points;
     }
 
     pkt << (sf::Uint8)(simPaused_ ? 1 : 0);

@@ -4,7 +4,16 @@
 
 class ICollectible;
 
-enum class TileType : int { Empty = 0, Wall = 1, Pellet = 2, PowerPellet = 3, Cherry = 4 };
+enum class TileType : int {
+    Empty       = 0,
+    Wall        = 1,
+    Pellet      = 2,
+    PowerPellet = 3,
+    BonusFruit1 = 4,  // 100 pts
+    BonusFruit2 = 5,  // 200 pts
+    BonusFruit3 = 6,  // 400 pts
+    BonusFruit4 = 7,  // 800 pts
+};
 
 static TileType fromInt(int v) {
     return static_cast<TileType>(v);
@@ -43,7 +52,7 @@ class LevelManager {
     // Picks up whatever collectible is at (x,y), clears the cell; nullptr if nothing there.
     const ICollectible* collectAt(int x, int y);
 
-    // Returns count of remaining pellets (Pellet + PowerPellet, excludes Cherry)
+    // Returns count of remaining pellets (Pellet + PowerPellet, excludes bonus fruit)
     int getRemainingPellets() const;
 
     /// True when `tileY` is the row where side tunnels connect (used for ghost slowdown).

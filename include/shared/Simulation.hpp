@@ -2,6 +2,7 @@
 
 #include <array>
 #include <memory>
+#include <random>
 #include <vector>
 
 #include "core/LevelManager.hpp"
@@ -22,7 +23,7 @@ struct PlayerStateView {
     float     deathTimeLeft{0.f};
 };
 
-enum class ScoreEvent { Pellet, PowerPellet, Ghost, Cherry };
+enum class ScoreEvent { Pellet, PowerPellet, Ghost, BonusFruit };
 
 class Simulation {
    public:
@@ -65,6 +66,15 @@ class Simulation {
     };
     void drainEatenGhosts(std::vector<EatenGhostEvent>& out);
 
+    struct GridTileUpdate {
+        std::uint16_t x{0};
+        std::uint16_t y{0};
+        std::uint8_t  tile{0};  // TileType enum value
+    };
+    void drainGridTileUpdates(std::vector<GridTileUpdate>& out);
+
+    void drainFruitPopups(std::vector<EatenGhostEvent>& out);
+
     /// At least one player has no lives (match cannot continue).
     bool isMatchLost() const;
     /// All clearable pellets on the current level are gone.
@@ -97,6 +107,18 @@ class Simulation {
 
     std::vector<ConsumedPellet>  consumedThisTick;
     std::vector<EatenGhostEvent> eatenGhostsThisTick;
+    std::vector<GridTileUpdate>  gridTileUpdatesThisTick;
+    std::vector<EatenGhostEvent> fruitPopupsThisTick;
+
+    int  currentLevel_{1};
+    int  initialStartingPellets_{0};
+    bool fruit70Processed_{false};
+    bool fruit170Processed_{false};
+
+    // Random 100/200/400/800 (BonusFruit1..4) per spawn; re-seeded on `resetForNewMatch`.
+    std::mt19937 bonusFruitRng_{std::random_device{}()};
+
+    void updateFruitSpawns();
 
     // ── Scatter / Chase cycling ───────────────────────────────────────────
     // Phase durations (seconds): scatter, chase, scatter, chase, scatter, chase, scatter, then infinite chase.

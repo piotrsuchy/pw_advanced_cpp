@@ -19,8 +19,12 @@ Simulation::Simulation() {
 }
 
 void Simulation::initLevel(int levelNumber) {
+    currentLevel_ = levelNumber;
     level.loadLevel(levelNumber);
-    initializedPositions = false;
+    initializedPositions    = false;
+    initialStartingPellets_ = level.getRemainingPellets();
+    fruit70Processed_       = false;
+    fruit170Processed_      = false;
 }
 
 void Simulation::resetForNewMatch(int levelNumber) {
@@ -40,6 +44,12 @@ void Simulation::resetForNewMatch(int levelNumber) {
     }
     consumedThisTick.clear();
     eatenGhostsThisTick.clear();
+    gridTileUpdatesThisTick.clear();
+    fruitPopupsThisTick.clear();
+    {
+        std::random_device rd;
+        bonusFruitRng_.seed(rd());
+    }
     ghostMode  = GhostMode::Scatter;
     phaseIndex = 0;
     phaseTimer = PHASE_SCHEDULE[0];
@@ -192,11 +202,18 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
                 players[pi].resetFrightenedEatCount();
                 for (auto& gp : ghosts) gp->setFrightened(panic);
             }
+            if (!c->countsTowardLevelPelletTotal() && c->frightenedModeDuration() <= 0.f) {
+                const float fcx = offX + curX * scaledTileSize + scaledTileSize * 0.5f;
+                const float fcy = offY + curY * scaledTileSize + scaledTileSize * 0.5f;
+                fruitPopupsThisTick.push_back({fcx, fcy, c->points()});
+            }
             consumedThisTick.push_back({curX, curY, c});
         }
 
         players[pi].tickPowerTimer(dt);
     }
+
+    updateFruitSpawns();
 
     // --- Resolve frightened collisions (ghost eating) ---
     std::vector<GhostEatenEvent> eatenEvents;
@@ -261,6 +278,49 @@ void Simulation::drainConsumed(std::vector<ConsumedPellet>& out) {
 void Simulation::drainEatenGhosts(std::vector<EatenGhostEvent>& out) {
     out = std::move(eatenGhostsThisTick);
     eatenGhostsThisTick.clear();
+}
+
+void Simulation::drainGridTileUpdates(std::vector<GridTileUpdate>& out) {
+    out = std::move(gridTileUpdatesThisTick);
+    gridTileUpdatesThisTick.clear();
+}
+
+void Simulation::drainFruitPopups(std::vector<EatenGhostEvent>& out) {
+    out = std::move(fruitPopupsThisTick);
+    fruitPopupsThisTick.clear();
+}
+
+void Simulation::updateFruitSpawns() {
+    // Classic schedule: first bonus after 70 pellets, second after 170 (cumulative) eaten this level.
+    // Spawn cells match CLASSIC_MAZE: two empty tunnel slots at (9,21) and (15,21) — not row 20 (pellet/wall).
+    static constexpr int               kFirstMilestone  = 70;
+    static constexpr int               kSecondMilestone = 170;
+    static constexpr int               kFruitTunnelRowY = 21;
+    const int                          eaten            = initialStartingPellets_ - level.getRemainingPellets();
+    std::uniform_int_distribution<int> tierDist(0, 3);
+
+    if (!fruit70Processed_ && eaten >= kFirstMilestone) {
+        const int      tier  = tierDist(bonusFruitRng_);
+        const TileType fruit = static_cast<TileType>(static_cast<int>(TileType::BonusFruit1) + tier);
+        const int      x = 9, y = kFruitTunnelRowY;
+        if (level.getTile(x, y) == TileType::Empty) {
+            fruit70Processed_ = true;
+            level.setTile(x, y, fruit);
+            gridTileUpdatesThisTick.push_back({static_cast<std::uint16_t>(x), static_cast<std::uint16_t>(y),
+                                               static_cast<std::uint8_t>(static_cast<int>(fruit))});
+        }
+    }
+    if (!fruit170Processed_ && eaten >= kSecondMilestone) {
+        const int      tier  = tierDist(bonusFruitRng_);
+        const TileType fruit = static_cast<TileType>(static_cast<int>(TileType::BonusFruit1) + tier);
+        const int      x = 15, y = kFruitTunnelRowY;
+        if (level.getTile(x, y) == TileType::Empty) {
+            fruit170Processed_ = true;
+            level.setTile(x, y, fruit);
+            gridTileUpdatesThisTick.push_back({static_cast<std::uint16_t>(x), static_cast<std::uint16_t>(y),
+                                               static_cast<std::uint8_t>(static_cast<int>(fruit))});
+        }
+    }
 }
 
 Vec2 Simulation::getGhostPosition(int ghostIndex) const {

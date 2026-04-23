@@ -326,8 +326,8 @@ void GameClient::processSnapshot(sf::Packet& pkt) {
         gf_[gi] = static_cast<Direction>(f);
     }
 
-    sf::Uint16 nPellets, nGhostScores;
-    pkt >> nPellets >> nGhostScores;
+    sf::Uint16 nPellets, nGhostScores, nGridUpdates, nFruitPopups;
+    pkt >> nPellets >> nGhostScores >> nGridUpdates >> nFruitPopups;
 
     for (int gi = 0; gi < 4; ++gi) {
         sf::Uint8 a, fr;
@@ -348,7 +348,8 @@ void GameClient::processSnapshot(sf::Packet& pkt) {
         pkt >> cx >> cy >> t;
         if (t == 1) audio_.playCue(AudioCue::PelletChomp);
         if (t == 2) audio_.playCue(AudioCue::PowerPellet);
-        if (t == 1 || t == 2) level_.setTile(cx, cy, TileType::Empty);
+        if (t >= 4 && t <= 7) audio_.playCue(AudioCue::PelletChomp);
+        if (t == 1 || t == 2 || (t >= 4 && t <= 7)) level_.setTile(cx, cy, TileType::Empty);
     }
 
     for (sf::Uint16 k = 0; k < nGhostScores; ++k) {
@@ -356,6 +357,20 @@ void GameClient::processSnapshot(sf::Packet& pkt) {
         sf::Uint16 pts;
         pkt >> ex >> ey >> pts;
         audio_.playCue(AudioCue::GhostEaten);
+        popups_.emplace_back(ex, ey, static_cast<int>(pts), 0.f);
+    }
+
+    for (sf::Uint16 k = 0; k < nGridUpdates; ++k) {
+        sf::Uint16 x, y;
+        sf::Uint8  tv;
+        pkt >> x >> y >> tv;
+        level_.setTile(static_cast<int>(x), static_cast<int>(y), fromInt(static_cast<int>(tv)));
+    }
+
+    for (sf::Uint16 k = 0; k < nFruitPopups; ++k) {
+        float      ex, ey;
+        sf::Uint16 pts;
+        pkt >> ex >> ey >> pts;
         popups_.emplace_back(ex, ey, static_cast<int>(pts), 0.f);
     }
 
@@ -373,16 +388,7 @@ void GameClient::processLevel(sf::Packet& pkt) {
         for (int x = 0; x < static_cast<int>(w); ++x) {
             sf::Uint8 tv;
             pkt >> tv;
-            TileType t = TileType::Empty;
-            if (tv == 1)
-                t = TileType::Wall;
-            else if (tv == 2)
-                t = TileType::Pellet;
-            else if (tv == 3)
-                t = TileType::PowerPellet;
-            else if (tv == 4)
-                t = TileType::Cherry;
-            level_.setTile(x, y, t);
+            level_.setTile(x, y, fromInt(static_cast<int>(tv)));
         }
     }
     haveLevel_       = true;

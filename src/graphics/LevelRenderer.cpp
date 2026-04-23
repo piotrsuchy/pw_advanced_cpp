@@ -1,8 +1,14 @@
 #include "graphics/LevelRenderer.hpp"
 
 #include <iostream>
+#include <string>
 
 #include "graphics/Constants.hpp"
+
+namespace {
+    // Fruit PNGs are 32×32; walls/pellets use 64×64 (`tileSize`). Compensate in world space before window scale.
+    constexpr float kBonusFruitAssetScale = 2.f;
+}  // namespace
 
 LevelRenderer::LevelRenderer() {
     // Load textures
@@ -22,27 +28,19 @@ LevelRenderer::LevelRenderer() {
         std::cout << "Power pellet texture loaded: " << powerPelletTexture.getSize().x << "x"
                   << powerPelletTexture.getSize().y << "\n";
     }
-    if (!cherryTexture.loadFromFile("assets/textures/map/cherry.png")) {
-        std::cerr << "Failed to load cherry.png\n";
-    } else {
-        std::cout << "Cherry texture loaded: " << cherryTexture.getSize().x << "x" << cherryTexture.getSize().y << "\n";
+    for (int i = 0; i < 4; ++i) {
+        const std::string path = "assets/textures/map/fruit-" + std::to_string(i + 1) + ".png";
+        if (!bonusFruitTexture[static_cast<std::size_t>(i)].loadFromFile(path)) {
+            std::cerr << "Failed to load " << path << "\n";
+        } else {
+            std::cout << "Bonus fruit " << (i + 1) << " texture loaded\n";
+        }
+        bonusFruitSprite[static_cast<std::size_t>(i)].setTexture(bonusFruitTexture[static_cast<std::size_t>(i)]);
     }
 
     wallSprite.setTexture(wallTexture);
     pelletSprite.setTexture(pelletTexture);
     powerPelletSprite.setTexture(powerPelletTexture);
-    cherrySprite.setTexture(cherryTexture);
-
-    // Scale sprites to tileSize
-    auto scaleToTileSize = [this](sf::Sprite& sprite) {
-        sf::Vector2u textureSize = sprite.getTexture()->getSize();
-        sprite.setScale(static_cast<float>(tileSize) / textureSize.x, static_cast<float>(tileSize) / textureSize.y);
-    };
-
-    scaleToTileSize(wallSprite);
-    scaleToTileSize(pelletSprite);
-    scaleToTileSize(powerPelletSprite);
-    scaleToTileSize(cherrySprite);
 }
 
 void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {
@@ -125,15 +123,26 @@ void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {
                 case TileType::PowerPellet:
                     sprite = &powerPelletSprite;
                     break;
-                case TileType::Cherry:
-                    sprite = &cherrySprite;
+                case TileType::BonusFruit1:
+                    sprite = &bonusFruitSprite[0];
+                    break;
+                case TileType::BonusFruit2:
+                    sprite = &bonusFruitSprite[1];
+                    break;
+                case TileType::BonusFruit3:
+                    sprite = &bonusFruitSprite[2];
+                    break;
+                case TileType::BonusFruit4:
+                    sprite = &bonusFruitSprite[3];
                     break;
                 default:
                     break;
             }
 
             if (sprite) {
-                sprite->setScale(scale, scale);
+                const bool  bonusFruit = tileType >= TileType::BonusFruit1 && tileType <= TileType::BonusFruit4;
+                const float s          = scale * (bonusFruit ? kBonusFruitAssetScale : 1.f);
+                sprite->setScale(s, s);
                 sprite->setPosition(offsetX + x * scaledTileSize, offsetY + y * scaledTileSize);
                 window.draw(*sprite);
                 tilesDrawn++;

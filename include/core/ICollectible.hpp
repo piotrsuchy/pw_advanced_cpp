@@ -17,11 +17,11 @@ class ICollectible {
     virtual bool countsTowardLevelPelletTotal() const {
         return true;
     }
-    // SNAPSHOT / client clear path: 1 = normal, 2 = power (large) pellet; fruit uses 1.
+    // SNAPSHOT / client clear path: 1 = normal pellet, 2 = power pellet; bonus fruit use 4–7.
     virtual std::uint8_t networkClearTag() const {
         return 1;
     }
 };
 
-// Registry for the fixed TileType::Pellet / PowerPellet / Cherry values (int matches enum class).
+// Registry for TileType pellet / power / bonus fruit (int matches enum class).
 const ICollectible* collectibleForTileType(int typeRaw);

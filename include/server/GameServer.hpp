@@ -32,7 +32,9 @@ class GameServer {
 
     sf::Packet buildLevelPacket() const;
     sf::Packet buildSnapshotPacket(const std::vector<Simulation::ConsumedPellet>&  consumed,
-                                   const std::vector<Simulation::EatenGhostEvent>& ghostScores);
+                                   const std::vector<Simulation::EatenGhostEvent>& ghostScores,
+                                   const std::vector<Simulation::GridTileUpdate>&  gridUpdates,
+                                   const std::vector<Simulation::EatenGhostEvent>& fruitPopups);
 
     unsigned short port_;
     int            tickHz_;

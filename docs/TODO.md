@@ -13,7 +13,7 @@
 | Death animation (8 frames) | Working |
 | Pacman mouth animation | Working |
 | Ghost respawn from house | Working |
-| Cherries (2 fixed positions, 100 pts) | Working |
+| Dynamic bonus fruit (70 / 170 pellets, random 100/200/400/800, fruit-1…4.png, score popups) | Working |
 | Client/server multiplayer architecture | Working |
 | Main menu, READY!, pause, game over / level win + retry | Working |
 | HUD lives + scores | Working (text) |
@@ -21,18 +21,11 @@
 | Ghosts slower in side tunnel (horizontal wrap row) | Working |
 | Scatter corners + chase/scatter reversal + Blinky Cruise Elroy | Working |
 | Power pellet end flash (ghosts blue/white in last 3s) | Working |
+| Audio (SFX + intro jingle, theme, frightened siren) | Working |
 
 ---
 
-### Audio
-
-- [ ] **Sound Effects** - Waka-waka, ghost eaten, death, power pellet activation, siren
-- [ ] **Background Music** - Intro jingle, gameplay siren
-
 ### Bonus Items
-
-- [ ] **Dynamic Fruit Spawning** - Fruit appears twice per level at specific pellet counts
-- [ ] **Fruit Variety** - Cherry → Strawberry → Orange → Apple → Melon → Galaxian → Bell → Key
 
 ### Polish
 
@@ -47,13 +40,15 @@
 
 1. Power pellet flash warning
 2. Ghost eyes returning to house
-3. Sound effects
-4. Main menu / pause
+3. Main menu / pause
 
 ## DONE
 
+- [x] **Sound effects** — Pellet chomp, power pellet, ghost eaten, Pac-Man death (`AudioCue` + bundled WAV); frightened-mode siren loop (`frightened_siren` MP3/WAV); driven from snapshot deltas on the client
+- [x] **Background music** — Level intro jingle (`intro_jingle.wav`); looping gameplay theme (`assets/audio/pacman-theme.mp3`), paused while the frightened siren plays
 - [x] **Match / `MatchPhase`** — `Match` holds flow (`Waiting`, `Playing`, `LevelComplete`, `GameOver`); `GameServer` calls `updateAfterStep` after each tick. `Simulation` exposes `isMatchLost()` / `isLevelCleared()`; win/lose flags no longer live on `Simulation`
-- [x] **PowerUps / `ICollectible`** — Collectibles (pellet, power pellet, cherry) are described by `ICollectible` with points, power duration, level-clear counting, and network clear tags; `Simulation` no longer branches on `TileType` for scoring
+- [x] **PowerUps / `ICollectible`** — Collectibles (pellet, power pellet, bonus fruit tiers) are described by `ICollectible` with points, power duration, level-clear counting, and network clear tags; `Simulation` no longer branches on `TileType` for scoring
+- [x] **Dynamic Fruit Spawning** — At **70** and **170** pellets eaten (same schedule as classic), the server places bonus fruit on empty cells `(9,20)` and `(15,20)`; each fruit picks a **random** value in **{100, 200, 400, 800}** (with matching `fruit-1`…`fruit-4` art); `SNAPSHOT` syncs spawns via grid updates; collection uses the same floating score text as ghost eating
 - [x] **Refactor `main_client.cpp` / `main_server.cpp`** — extracted into `GameClient` and `Server` classes; `main_*` files are now thin arg-parsing wrappers
 - [x] **Separate interface from implementation** — `IEntity` and `IGhostAI` are now pure-virtual interfaces; concrete classes implement them
 - [x] **Use polymorphism in Simulation** — `Simulation` uses `std::array<unique_ptr<Ghost>, 4>` with AI injected via strategy pattern
