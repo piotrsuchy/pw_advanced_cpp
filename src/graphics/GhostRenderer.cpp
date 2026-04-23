@@ -1,5 +1,7 @@
 #include "graphics/GhostRenderer.hpp"
 
+#include <cmath>
+
 GhostRenderer::GhostRenderer() {
     body.setRadius(24.f);
     body.setOrigin(24.f, 24.f);

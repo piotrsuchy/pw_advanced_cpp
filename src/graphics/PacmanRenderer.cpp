@@ -1,5 +1,8 @@
 #include "graphics/PacmanRenderer.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 PacmanRenderer::PacmanRenderer() {
     loadedClosed = textureClosed.loadFromFile("assets/textures/pacman/pacman_closed.png");
     hasOpen      = textureOpen.loadFromFile("assets/textures/pacman/pacman_open.png");
