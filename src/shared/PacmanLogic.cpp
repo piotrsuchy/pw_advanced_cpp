@@ -60,7 +60,7 @@ void PacmanLogic::update(float dt, LevelManager& level, float scaledTileSize, fl
         // Tunnel wrap: if position has crossed the horizontal boundary, teleport to other side
         const float worldLeft  = offX;
         const float worldRight = offX + level.getWidth() * scaledTileSize;
-        if (position.x < worldLeft)  position.x += level.getWidth() * scaledTileSize;
+        if (position.x < worldLeft) position.x += level.getWidth() * scaledTileSize;
         if (position.x >= worldRight) position.x -= level.getWidth() * scaledTileSize;
     } else {
         direction        = Direction::None;
