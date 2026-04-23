@@ -232,10 +232,10 @@ class Simulation {
     float      ghostReleaseTimer[4]   = {0.f, 0.f, 0.f, 0.f};
     std::array<float, 4> ghostRespawn = {0.f, 0.f, 0.f, 0.f};
 
-    EventQueue<ConsumedPellet>  consumedThisTick;       ///< Buffered collectible removals for the current tick.
-    EventQueue<EatenGhostEvent> eatenGhostsThisTick;    ///< Buffered frightened-ghost score popups.
+    EventQueue<ConsumedPellet>  consumedThisTick;         ///< Buffered collectible removals for the current tick.
+    EventQueue<EatenGhostEvent> eatenGhostsThisTick;      ///< Buffered frightened-ghost score popups.
     EventQueue<GridTileUpdate>  gridTileUpdatesThisTick;  ///< Buffered server-authored tile mutations.
-    EventQueue<EatenGhostEvent> fruitPopupsThisTick;    ///< Buffered bonus-fruit score popups.
+    EventQueue<EatenGhostEvent> fruitPopupsThisTick;      ///< Buffered bonus-fruit score popups.
 
     int  currentLevel_{1};
     int  initialStartingPellets_{0};

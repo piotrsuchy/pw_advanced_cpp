@@ -1,0 +1,276 @@
+@startuml
+title PacManGame - aktualny diagram klas
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+left to right direction
+
+package "Server" {
+    class GameServer {
+        +run()
+        -acceptConnections()
+        -processClientInputs()
+        -tick()
+        -resetMatch()
+        -broadcastLevelToAll()
+        -tryStartRoundAfterReady()
+        -onClientDisconnected(slot)
+        -buildLevelPacket()
+        -buildSnapshotPacket(consumed, ghostScores, gridUpdates, fruitPopups)
+    }
+}
+
+package "Core / Shared" {
+    class Simulation {
+        +initLevel(levelNumber)
+        +resetForNewMatch(levelNumber)
+        +step(dt, scaledTileSize, scale)
+        +setDesired(playerIndex, direction)
+        +getLevel()
+        +getGhostPosition(ghostIndex)
+        +getGhostFacing(ghostIndex)
+        +isGhostActive(ghostIndex)
+        +isGhostFrightened(ghostIndex)
+        +drainConsumed(out)
+        +drainEatenGhosts(out)
+        +drainGridTileUpdates(out)
+        +drainFruitPopups(out)
+        +getPlayerState(playerIndex)
+        +isMatchLost()
+        +isLevelCleared()
+    }
+
+    class Match {
+        +updateAfterStep(sim)
+        +phase()
+        +isGameOver()
+        +isLevelComplete()
+        +resetToPlaying()
+        +resetToWaiting()
+        +beginFromWaiting()
+    }
+
+    class Player {
+        +addScore(points)
+        +loseLife()
+        +getPacman()
+        +isAlive()
+        +getPowerTimer()
+    }
+
+    class PacmanLogic {
+        +setDesired(direction)
+        +update(dt, level, scaledTileSize, scale)
+        +setPosition(x, y)
+        +getPosition()
+        +getFacing()
+    }
+
+    class LevelManager {
+        +loadLevel(levelNumber)
+        +loadFromInts(intGrid)
+        +getTile(x, y)
+        +setTile(x, y, type)
+        +collectPellet(x, y)
+        +collectAt(x, y)
+        +getRemainingPellets()
+    }
+
+    interface IEntity {
+        +update(dt)
+        +getPosition()
+        +setPosition(x, y)
+        +getFacing()
+    }
+
+    class Ghost {
+        +update(dt)
+        +updateLogic(dt, level, scaledTileSize, scale, ...)
+        +setFrightened(seconds)
+        +isFrightened()
+        +reverseDirection()
+    }
+
+    interface IGhostAI {
+        +getTargetTile(...)
+        +getScatterTile(level)
+    }
+
+    class BlinkyAI
+    class PinkyAI
+    class InkyAI
+    class ClydeAI
+
+    class InteractionResolver {
+        {static} +resolveLethal(...)
+        {static} +resolveFrightened(...)
+    }
+
+    abstract class ICollectible {
+        {abstract} +points()
+        +frightenedModeDuration()
+        +countsTowardLevelPelletTotal()
+        +networkClearTag()
+    }
+
+    class "EventQueue<T>" as EventQueueT
+    struct ConsumedPellet
+    struct EatenGhostEvent
+    struct GridTileUpdate
+    struct GhostEatenEvent
+    struct PlayerStateView
+}
+
+package "Client" {
+    class GameClient {
+        +run()
+        -processWindowEvents()
+        -sendInput()
+        -receivePackets()
+        -processSnapshot(pkt)
+        -processLevel(pkt)
+        -updateAnimations(dt)
+        -render()
+        -connectToServer()
+    }
+
+    class InputManager {
+        +handleEvent(event)
+        +popQueuedDirection()
+        +getDesiredDirection()
+        +clearQueuedDirection()
+    }
+
+    class AudioManager {
+        +tryLoadBundled() : bool
+        +playCue(cue)
+        +setFrightenedLoop(active)
+        +playLevelIntro()
+        +stopAllMusic()
+        +setRoundBgm(active)
+    }
+
+    class LevelRenderer {
+        +draw(window, level)
+    }
+
+    class PacmanRenderer {
+        +setPosition(x, y)
+        +setFacing(direction)
+        +tick(dt, isMoving, scale)
+        +draw(window)
+        +setDeathTimeLeft(t)
+    }
+
+    class GhostRenderer {
+        +setPosition(x, y)
+        +setFrightened(active)
+        +setFrightenedEndFlash(active)
+        +setFrightenFlashPhase(t)
+        +setBaseColor(color)
+        +setFacing(direction)
+        +tick(dt, scale)
+        +draw(window)
+        +setDirectionalTextures(up, down, left, right) : bool
+    }
+
+    enum GhostSlot
+    enum ClientFlow
+    enum SubMenu
+}
+
+package "Shared types" {
+    struct Vec2
+    enum Direction
+    enum GhostMode
+    enum MatchPhase
+    enum TileType
+    enum AudioCue
+}
+
+GameServer *-- Simulation
+GameServer *-- Match
+GameServer ..> MatchPhase
+
+GameClient *-- "1" LevelManager : lokalna kopia planszy
+GameClient *-- InputManager
+GameClient *-- AudioManager
+GameClient *-- LevelRenderer
+GameClient *-- "2" PacmanRenderer
+GameClient *-- "4" GhostRenderer
+GameClient ..> GameServer : TCP / sf::Packet
+
+Simulation *-- "2" Player
+Simulation *-- "4" Ghost
+Simulation *-- LevelManager
+Simulation ..> EventQueueT : uzywa EventQueue<...>
+Simulation ..> ConsumedPellet
+Simulation ..> EatenGhostEvent
+Simulation ..> GridTileUpdate
+Simulation ..> InteractionResolver
+Simulation ..> GhostMode
+Simulation ..> PlayerStateView
+InteractionResolver ..> GhostEatenEvent
+
+Player *-- PacmanLogic
+
+Ghost --|> IEntity
+Ghost *-- "1" IGhostAI : strategia AI
+Ghost ..> LevelManager : ruch po siatce
+Ghost ..> Vec2
+Ghost ..> Direction
+
+BlinkyAI --|> IGhostAI
+PinkyAI --|> IGhostAI
+InkyAI --|> IGhostAI
+ClydeAI --|> IGhostAI
+
+PacmanLogic ..> LevelManager : kolizje i sterowanie
+PacmanLogic ..> Vec2
+PacmanLogic ..> Direction
+
+Match ..> Simulation
+Match ..> MatchPhase
+
+LevelManager ..> TileType
+LevelManager ..> ICollectible : collectAt()/counting
+
+InputManager ..> Direction
+LevelRenderer ..> LevelManager
+PacmanRenderer ..> Direction
+GhostRenderer ..> Direction
+AudioManager ..> AudioCue
+GameClient ..> GhostSlot
+GameClient ..> ClientFlow
+GameClient ..> SubMenu
+
+note right of ICollectible
+Konkretne implementacje sa tworzone jako
+wewnetrzne statyczne obiekty w
+src/core/ICollectible.cpp:
+- Pellet
+- PowerPellet
+- BonusFruit1..4
+end note
+
+note right of ICollectible
+Tylko points() jest czysto wirtualne.
+Pozostale metody maja domyslne implementacje.
+end note
+
+note bottom of Simulation
+Autorytatywny stan gry:
+poziom, gracze, duchy, timery
+i kolejki zdarzen zuzywane przez serwer.
+end note
+
+note bottom of Match
+Klasa nie posiada symulacji,
+jedynie wyprowadza faze rozgrywki
+na podstawie Simulation.
+end note
+
+@enduml
