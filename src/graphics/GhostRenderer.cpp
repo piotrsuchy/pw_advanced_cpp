@@ -32,15 +32,15 @@ void GhostRenderer::setPosition(float x, float y) {
 
 void GhostRenderer::setFrightened(bool f) {
     frightened = f;
-    if (!f) {
-        frightenedEndFlash = false;
-        frightenedFlashT_  = 0.f;
-    }
+    if (!f) frightenedEndFlash = false;
 }
 
 void GhostRenderer::setFrightenedEndFlash(bool on) {
-    if (!frightenedEndFlash && on) frightenedFlashT_ = 0.f;
     frightenedEndFlash = on;
+}
+
+void GhostRenderer::setFrightenFlashPhase(float t) {
+    frightenFlashPhaseT_ = t;
 }
 
 void GhostRenderer::setFacing(Direction d) {
@@ -48,7 +48,6 @@ void GhostRenderer::setFacing(Direction d) {
 }
 
 void GhostRenderer::tick(float dt, float scale) {
-    if (frightened && frightenedEndFlash) frightenedFlashT_ += dt;
     body.setScale(scale / 1.0f, scale / 1.0f);
     if (hasTextures) sprite.setScale(scale, scale);
 }
@@ -66,7 +65,7 @@ void GhostRenderer::draw(sf::RenderWindow& window) {
         if (frightened && frightLoaded) {
             // Steady blue vs blue/white flash in last seconds of power (see GameClient for threshold)
             const bool         flashBlueWhite = frightenedEndFlash;
-            const int          frame = flashBlueWhite ? (static_cast<int>(std::floor(frightenedFlashT_ * 5.f)) % 2) : 0;
+            const int          frame = flashBlueWhite ? (static_cast<int>(std::floor(frightenFlashPhaseT_ * 5.f)) % 2) : 0;
             const sf::Texture& ft    = (frame == 0) ? fright1 : fright2;
             sprite.setTexture(ft, true);
             window.draw(sprite);
@@ -96,7 +95,7 @@ void GhostRenderer::draw(sf::RenderWindow& window) {
     if (frightened) {
         auto c = body.getFillColor();
         if (frightenedEndFlash) {
-            const int frame = static_cast<int>(std::floor(frightenedFlashT_ * 5.f)) % 2;
+            const int frame = static_cast<int>(std::floor(frightenFlashPhaseT_ * 5.f)) % 2;
             body.setFillColor(frame == 0 ? sf::Color(40, 40, 255) : sf::Color(255, 255, 255));
         } else
             body.setFillColor(sf::Color(0, 0, 255));

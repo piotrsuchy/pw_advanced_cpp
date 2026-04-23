@@ -99,6 +99,9 @@ class GameClient {
     unsigned  lives0_{3}, lives1_{3};
     bool      pow0_{false}, pow1_{false};
     float     powerTime0_{0.f}, powerTime1_{0.f};
+    /// Single clock for power-pellet end flash (last ~3s); shared by all GhostRenderers so it is not reset by
+    /// per-ghost setFrightened toggles or one-frame snapshot glitches.
+    float     powerFrightenPhase_{0.f};
     Direction f0_{Direction::Right}, f1_{Direction::Left};
 
     // Ghost state (received from server)

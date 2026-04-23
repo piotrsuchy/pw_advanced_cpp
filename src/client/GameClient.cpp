@@ -443,12 +443,25 @@ void GameClient::updateAnimations(float dt) {
     const float maxPower = std::max(powerTime0_, powerTime1_);
     const bool  endFlash = maxPower > 0.f && maxPower <= kPowerPelletFlashWindowSec;
 
+    bool anyGhostFrightened = false;
+    for (int i = 0; i < 4; ++i) {
+        if (ghostFrightened_[i] && ghostActive_[i]) {
+            anyGhostFrightened = true;
+            break;
+        }
+    }
+    if (!endFlash)
+        powerFrightenPhase_ = 0.f;
+    else if (anyGhostFrightened)
+        powerFrightenPhase_ += dt;
+
     GhostRenderer* renderers[4] = {&g0_, &g1_, &g2_, &g3_};
     for (int gi = 0; gi < 4; ++gi) {
         renderers[gi]->setPosition(gx_[gi], gy_[gi]);
         const bool fr = ghostFrightened_[gi] && ghostActive_[gi];
         renderers[gi]->setFrightened(fr);
         renderers[gi]->setFrightenedEndFlash(endFlash && fr);
+        renderers[gi]->setFrightenFlashPhase(powerFrightenPhase_);
         renderers[gi]->setFacing(gf_[gi]);
         renderers[gi]->tick(dt, scale);
     }
