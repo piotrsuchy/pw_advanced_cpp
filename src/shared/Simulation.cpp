@@ -135,9 +135,12 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             updateGhostExiting(gi, dt, scaledTileSize, scale);
         }
         if (ghostState[gi] == GhostState::Roaming) {
-            g.updateLogic(dt, level, scaledTileSize, scale, p0, p0dir, p1);
+            g.updateLogic(dt, level, scaledTileSize, scale, p0, p0dir, p1, ghostMode);
         }
     }
+
+    // --- Scatter/Chase mode cycling ---
+    updateGhostMode(dt);
 
     // --- Pellet collection ---
     consumedThisTick.clear();
@@ -277,6 +280,34 @@ void Simulation::updateGhostRespawns(float dt, float /*scaledTileSize*/, float /
                 ghostState[i]        = GhostState::InHouse;
                 ghostReleaseTimer[i] = 1.0f + 0.5f * i;
             }
+        }
+    }
+}
+
+void Simulation::updateGhostMode(float dt) {
+    // Once all phases are exhausted the ghosts stay in Chase permanently.
+    if (phaseIndex >= PHASE_COUNT) return;
+
+    phaseTimer -= dt;
+    if (phaseTimer > 0.f) return;
+
+    // Advance to the next phase.
+    ++phaseIndex;
+    GhostMode newMode = (phaseIndex % 2 == 0) ? GhostMode::Scatter : GhostMode::Chase;
+
+    // Carry any overshoot into the next phase.
+    if (phaseIndex < PHASE_COUNT) {
+        phaseTimer = PHASE_SCHEDULE[phaseIndex] + phaseTimer;  // phaseTimer is negative here
+    }
+
+    // Only reverse and switch mode if it actually changed.
+    if (newMode == ghostMode) return;
+    ghostMode = newMode;
+
+    // Ghosts that are roaming and not frightened immediately reverse.
+    for (int i = 0; i < 4; ++i) {
+        if (ghostState[i] == GhostState::Roaming && ghostRespawn[i] <= 0.f && !ghosts[i]->isFrightened()) {
+            ghosts[i]->reverseDirection();
         }
     }
 }

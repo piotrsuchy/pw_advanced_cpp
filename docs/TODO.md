@@ -37,7 +37,9 @@
 
 ### Core Gameplay
 
-- [ ] **Scatter/Chase Mode Cycling** - Classic ghosts alternate between chase and scatter phases on a timer
+- [x] **Scatter/Chase Mode Cycling** - Classic ghosts alternate between chase and scatter phases on a timer
+        (7s scatter → 20s chase → 7s scatter → 20s chase → 5s scatter → 20s chase → 5s scatter → ∞ chase;
+        ghosts reverse direction on each transition; frightened state overrides)
 - [x] **Tunnel Wrapping** - Pac-Man and ghosts wrap horizontally through left/right tunnels
 - [x] **Level Completion** - Detection for "all pellets eaten" → win condition
 - [ ] **Level Progression** - Multiple levels with increasing difficulty (faster ghosts, shorter frightened time)
@@ -84,7 +86,7 @@
 
 1. ~~Level completion detection (win condition)~~ ✅
 2. ~~Tunnel wrapping~~ ✅
-3. Scatter/chase mode cycling
+3. ~~Scatter/chase mode cycling~~ ✅
 4. Lives display in HUD
 5. Game over / victory screen
 

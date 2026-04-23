@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <cmath>
 
+// ── Ghost ────────────────────────────────────────────────────────────────────
+
 Ghost::Ghost(std::unique_ptr<IGhostAI> aiStrategy) : ai(std::move(aiStrategy)) {}
 
-void Ghost::update(float dt) {
-    // Basic update without context. The Simulation/Match will call updateLogic instead.
+void Ghost::update(float /*dt*/) {
+    // Contextless update stub — Simulation calls updateLogic() instead.
 }
 
 Vec2 Ghost::getPosition() const {
@@ -30,6 +32,26 @@ bool Ghost::isFrightened() const {
     return frightenedTimer > 0.f;
 }
 
+void Ghost::reverseDirection() {
+    switch (direction) {
+        case Direction::Up:
+            direction = Direction::Down;
+            break;
+        case Direction::Down:
+            direction = Direction::Up;
+            break;
+        case Direction::Left:
+            direction = Direction::Right;
+            break;
+        case Direction::Right:
+            direction = Direction::Left;
+            break;
+        default:
+            break;
+    }
+}
+
+// Returns true when the ghost centre is within `eps` pixels of a tile centre.
 bool Ghost::aligned(float tile, float offX, float offY) const {
     constexpr float eps = 2.f;
     float           cx  = std::fmod(position.x - offX, tile);
@@ -57,35 +79,47 @@ bool Ghost::canMove(Direction dir, const LevelManager& lvl, float tile, float of
         default:
             break;
     }
-    // Only y is a hard boundary; x wraps via LevelManager::getTile()
     if (curY < 0 || curY >= lvl.getHeight()) return false;
     return lvl.getTile(curX, curY) != TileType::Wall;
 }
 
 void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSize, float scale, Vec2 pac0Pos,
-                        Direction pac0Facing, Vec2 pac1Pos) {
+                        Direction pac0Facing, Vec2 pac1Pos, GhostMode mode) {
     const float offX = (800.f - level.getWidth() * scaledTileSize) / 2.f;
     const float offY = (600.f - level.getHeight() * scaledTileSize) / 2.f;
 
     if (frightenedTimer > 0.f) frightenedTimer = std::max(0.f, frightenedTimer - dt);
 
-    // Choose a direction when at intersections or standing still
+    // Choose a new direction when aligned to a tile centre (intersection).
     if (direction == Direction::None || aligned(scaledTileSize, offX, offY)) {
-        auto [tx, ty] = ai->getTargetTile(level, scaledTileSize, pac0Pos, pac0Facing, pac1Pos, position);
-        int cx        = static_cast<int>(std::floor((position.x - offX) / scaledTileSize));
-        int cy        = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
+        // Determine target tile based on mode (frightened overrides).
+        std::pair<int, int> target;
+        if (frightenedTimer > 0.f) {
+            // Frightened: use scatter corner as a crude "run away" target
+            // (the direction-choice inversion below effectively runs away).
+            target = ai->getScatterTile(level);
+        } else if (mode == GhostMode::Scatter) {
+            target = ai->getScatterTile(level);
+        } else {
+            target = ai->getTargetTile(level, scaledTileSize, pac0Pos, pac0Facing, pac1Pos, position);
+        }
+        auto [tx, ty] = target;
 
-        // Try the direction that reduces Manhattan distance; avoid reversing if possible
+        int cx = static_cast<int>(std::floor((position.x - offX) / scaledTileSize));
+        int cy = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
+
         Direction candidates[4] = {Direction::Up, Direction::Left, Direction::Down, Direction::Right};
         float     bestScore     = 1e9f;
         Direction bestDir       = Direction::None;
+
         for (Direction d : candidates) {
+            // No immediate 180° reverse (unless forced).
             if (direction != Direction::None) {
                 if ((direction == Direction::Up && d == Direction::Down) ||
                     (direction == Direction::Down && d == Direction::Up) ||
                     (direction == Direction::Left && d == Direction::Right) ||
                     (direction == Direction::Right && d == Direction::Left)) {
-                    continue;  // avoid immediate reverse
+                    continue;
                 }
             }
             int nx = cx, ny = cy;
@@ -93,17 +127,21 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
             if (d == Direction::Down) ++ny;
             if (d == Direction::Left) --nx;
             if (d == Direction::Right) ++nx;
-            if (ny < 0 || ny >= level.getHeight()) continue;  // y is hard boundary
-            // x wraps via getTile(); don't skip out-of-bounds nx
+            if (ny < 0 || ny >= level.getHeight()) continue;
             if (level.getTile(nx, ny) == TileType::Wall) continue;
-            float score = std::abs(tx - nx) + std::abs(ty - ny);
+
+            // Frightened: maximise distance from scatter corner (run away).
+            float score =
+                isFrightened() ? -(std::abs(tx - nx) + std::abs(ty - ny)) : (std::abs(tx - nx) + std::abs(ty - ny));
+
             if (score < bestScore) {
                 bestScore = score;
                 bestDir   = d;
             }
         }
+
+        // Fallback: allow any direction including reverse.
         if (bestDir == Direction::None) {
-            // fall back: try any open dir including reverse
             for (Direction d : candidates) {
                 if (canMove(d, level, scaledTileSize, offX, offY)) {
                     bestDir = d;
@@ -114,8 +152,8 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
         direction = bestDir;
     }
 
-    // slow to 60% of normal speed
-    float v = (isFrightened() ? (speed * 0.6f) : speed) * scale;
+    // Move — frightened ghosts run at 60% of normal speed.
+    float v = (isFrightened() ? speed * 0.6f : speed) * scale;
     switch (direction) {
         case Direction::Up:
             position.y -= v * dt;
@@ -133,11 +171,10 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
             break;
     }
 
-    // Clamp to non-walls
+    // Push out of walls.
     int tileX = static_cast<int>(std::floor((position.x - offX) / scaledTileSize));
     int tileY = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
     if (level.getTile(tileX, tileY) == TileType::Wall) {
-        // back off and stop
         switch (direction) {
             case Direction::Up:
                 position.y += v * dt;
@@ -157,27 +194,31 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
         direction = Direction::None;
     }
 
-    // Tunnel wrap: teleport to opposite side when crossing horizontal boundary
+    // Horizontal tunnel wrap.
     const float worldLeft  = offX;
     const float worldRight = offX + level.getWidth() * scaledTileSize;
     if (position.x < worldLeft) position.x += level.getWidth() * scaledTileSize;
     if (position.x >= worldRight) position.x -= level.getWidth() * scaledTileSize;
 }
 
-// Simple target implementations
+// ── AI strategies ────────────────────────────────────────────────────────────
+
+// Blinky — top-right corner scatter
 std::pair<int, int> BlinkyAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2,
                                             Vec2) const {
-    // Aim directly at player 0
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
     int   tx   = static_cast<int>(std::floor((pac0Pos.x - offX) / tile));
     int   ty   = static_cast<int>(std::floor((pac0Pos.y - offY) / tile));
     return {tx, ty};
 }
+std::pair<int, int> BlinkyAI::getScatterTile(const LevelManager& level) const {
+    return {level.getWidth() - 1, 0};
+}
 
+// Pinky — top-left corner scatter
 std::pair<int, int> PinkyAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction facing, Vec2,
                                            Vec2) const {
-    // Aim four tiles ahead of player 0
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
     int   tx   = static_cast<int>(std::floor((pac0Pos.x - offX) / tile));
@@ -193,10 +234,13 @@ std::pair<int, int> PinkyAI::getTargetTile(const LevelManager& level, float tile
         dx = 4;
     return {std::clamp(tx + dx, 0, level.getWidth() - 1), std::clamp(ty + dy, 0, level.getHeight() - 1)};
 }
+std::pair<int, int> PinkyAI::getScatterTile(const LevelManager& level) const {
+    return {0, 0};
+}
 
+// Inky — bottom-right corner scatter
 std::pair<int, int> InkyAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2 pac1Pos,
                                           Vec2) const {
-    // Aim roughly between players
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
     float mx   = (pac0Pos.x + pac1Pos.x) * 0.5f;
@@ -205,10 +249,13 @@ std::pair<int, int> InkyAI::getTargetTile(const LevelManager& level, float tile,
     int   ty   = static_cast<int>(std::floor((my - offY) / tile));
     return {std::clamp(tx, 0, level.getWidth() - 1), std::clamp(ty, 0, level.getHeight() - 1)};
 }
+std::pair<int, int> InkyAI::getScatterTile(const LevelManager& level) const {
+    return {level.getWidth() - 1, level.getHeight() - 1};
+}
 
+// Clyde — bottom-left corner scatter
 std::pair<int, int> ClydeAI::getTargetTile(const LevelManager& level, float tile, Vec2 pac0Pos, Direction, Vec2,
                                            Vec2 currentPos) const {
-    // If close, run to a corner; else chase
     float offX = (800.f - level.getWidth() * tile) / 2.f;
     float offY = (600.f - level.getHeight() * tile) / 2.f;
     int   tx   = static_cast<int>(std::floor((pac0Pos.x - offX) / tile));
@@ -218,4 +265,7 @@ std::pair<int, int> ClydeAI::getTargetTile(const LevelManager& level, float tile
     int   dist = std::abs(tx - cx) + std::abs(ty - cy);
     if (dist < 6) return {1, level.getHeight() - 2};
     return {tx, ty};
+}
+std::pair<int, int> ClydeAI::getScatterTile(const LevelManager& level) const {
+    return {0, level.getHeight() - 1};
 }

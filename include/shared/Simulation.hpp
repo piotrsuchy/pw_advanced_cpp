@@ -102,7 +102,17 @@ class Simulation {
     bool gameOver{false};
     bool levelComplete{false};
 
+    // ── Scatter / Chase cycling ───────────────────────────────────────────
+    // Phase durations (seconds): scatter, chase, scatter, chase, scatter, chase, scatter, then infinite chase.
+    // Classic Pac-Man level-1 schedule.
+    static constexpr float PHASE_SCHEDULE[] = {7.f, 20.f, 7.f, 20.f, 5.f, 20.f, 5.f};
+    static constexpr int   PHASE_COUNT      = 7;
+    GhostMode              ghostMode{GhostMode::Scatter};
+    int                    phaseIndex{0};
+    float                  phaseTimer{PHASE_SCHEDULE[0]};
+
     void updatePlayerRespawns(float dt);
     void updateGhostRespawns(float dt, float scaledTileSize, float scale);
     void updateGhostExiting(int idx, float dt, float scaledTileSize, float scale);
+    void updateGhostMode(float dt);  // advance scatter/chase phase timer
 };
