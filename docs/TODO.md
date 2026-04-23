@@ -19,29 +19,14 @@
 
 ---
 
-- [x] **Refactor `main_client.cpp` / `main_server.cpp`** — extracted into `GameClient` and `Server` classes; `main_*` files are now thin arg-parsing wrappers
+### Architecture Tasks (from reviewer feedback)
 
-## Architecture Tasks (from reviewer feedback)
-
-- [x] **Separate interface from implementation** — `IEntity` and `IGhostAI` are now pure-virtual interfaces; concrete classes implement them
-- [x] **Use polymorphism in Simulation** — `Simulation` uses `std::array<unique_ptr<Ghost>, 4>` with AI injected via strategy pattern
 - [ ] **PowerUps ownership** — Power pellets are still a raw `TileType` in `LevelManager`; needs an `ICollectible` abstraction
-- [x] **Player representation** — `Player.hpp` encapsulates all per-player state (score, lives, timers, spawn, `PacmanLogic`)
 - [ ] **Match / GameSession** — Extract game-phase state (waiting, playing, game-over, level-complete) from `Simulation` into a `Match` class
-- [x] **AI algorithm separation** — Ghost targeting split into `BlinkyAI`, `PinkyAI`, `InkyAI`, `ClydeAI` strategy classes
-- [x] **Interaction/conflict resolution** — `InteractionResolver` handles all lethal and frightened collisions
-
-### Bugs
-
-- [x] **Ghosts render blue (frightened) after being eaten** — fixed: server now sends per-ghost `active` + `frightened` flags in SNAPSHOT; client uses them instead of inferring from player power state
 
 ### Core Gameplay
 
-- [x] **Scatter/Chase Mode Cycling** - Classic ghosts alternate between chase and scatter phases on a timer
-        (7s scatter → 20s chase → 7s scatter → 20s chase → 5s scatter → 20s chase → 5s scatter → ∞ chase;
-        ghosts reverse direction on each transition; frightened state overrides)
-- [x] **Tunnel Wrapping** - Pac-Man and ghosts wrap horizontally through left/right tunnels
-- [x] **Level Completion** - Detection for "all pellets eaten" → win condition
+- [ ] **Ghosts should blink from blue to white** for the last few seconds of the being frightened.
 - [ ] **Level Progression** - Multiple levels with increasing difficulty (faster ghosts, shorter frightened time)
 - [ ] **Ghost Speed in Tunnels** - Ghosts slow down in tunnels
 
@@ -97,3 +82,18 @@
 3. Ghost eyes returning to house
 4. Sound effects
 5. Main menu / pause
+
+## DONE
+
+- [x] **Refactor `main_client.cpp` / `main_server.cpp`** — extracted into `GameClient` and `Server` classes; `main_*` files are now thin arg-parsing wrappers
+- [x] **Separate interface from implementation** — `IEntity` and `IGhostAI` are now pure-virtual interfaces; concrete classes implement them
+- [x] **Use polymorphism in Simulation** — `Simulation` uses `std::array<unique_ptr<Ghost>, 4>` with AI injected via strategy pattern
+- [x] **Player representation** — `Player.hpp` encapsulates all per-player state (score, lives, timers, spawn, `PacmanLogic`)
+- [x] **AI algorithm separation** — Ghost targeting split into `BlinkyAI`, `PinkyAI`, `InkyAI`, `ClydeAI` strategy classes
+- [x] **Interaction/conflict resolution** — `InteractionResolver` handles all lethal and frightened collisions
+- [x] **Ghosts render blue (frightened) after being eaten** — fixed: server now sends per-ghost `active` + `frightened` flags in SNAPSHOT; client uses them instead of inferring from player power state
+- [x] **Scatter/Chase Mode Cycling** - Classic ghosts alternate between chase and scatter phases on a timer
+        (7s scatter → 20s chase → 7s scatter → 20s chase → 5s scatter → 20s chase → 5s scatter → ∞ chase;
+        ghosts reverse direction on each transition; frightened state overrides)
+- [x] **Tunnel Wrapping** - Pac-Man and ghosts wrap horizontally through left/right tunnels
+- [x] **Level Completion** - Detection for "all pellets eaten" → win condition

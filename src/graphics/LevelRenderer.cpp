@@ -79,10 +79,6 @@ void LevelRenderer::draw(sf::RenderWindow& window, const LevelManager& level) {
     float offsetX = (windowWidth - totalWidth) / 2.0f;
     float offsetY = (windowHeight - totalHeight) / 2.0f;
 
-    std::cout << "Recalculated offset: window(" << windowWidth << "," << windowHeight << ") - level(" << totalWidth
-              << "," << totalHeight << ") / 2 = (" << offsetX << "," << offsetY << ")" << std::endl;
-    std::cout << "Using scaled tile size: " << scaledTileSize << " (scale: " << scale << ")" << std::endl;
-
     static bool firstDraw = true;
     if (firstDraw) {
         std::cout << "Window size: " << window.getSize().x << "x" << window.getSize().y << "\n";

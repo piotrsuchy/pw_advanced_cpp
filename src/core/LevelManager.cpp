@@ -21,7 +21,6 @@ void LevelManager::loadFromInts(const std::vector<std::vector<int>>& intGrid) {
 }
 
 bool LevelManager::collectPellet(int x, int y) {
-    printf("collectPellet(%d, %d)\n", x, y);
     if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) {
         return false;
     }
@@ -33,7 +32,6 @@ bool LevelManager::collectPellet(int x, int y) {
 }
 
 TileType LevelManager::collectPelletTyped(int x, int y) {
-    printf("collectPelletTyped(%d, %d)\n", x, y);
     if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) {
         return TileType::Empty;
     }
