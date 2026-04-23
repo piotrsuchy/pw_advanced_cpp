@@ -1,5 +1,7 @@
 # Missing Features for Classic Pacman Experience
 
+- [ ] **Add at least one custom C++ template** - Introduce and use a project-owned template (class or function template) so the codebase satisfies the "maximum grade" requirement for custom templates.
+
 ## What's Implemented
 
 | Feature | Status |
@@ -29,18 +31,10 @@
 
 ### Polish
 
-- [ ] **Intermission Cutscenes** - Short animations between certain levels
 - [ ] **Ghost "Eyes" Return** - After being eaten, ghost eyes travel back to house
 - [ ] **Pre-game Ghost Bounce** - Ghosts bounce in house before release
 - [ ] **High Score Tracking** - Persistent best score
-
----
-
-### Medium Priority (Polish)
-
-1. Power pellet flash warning
-2. Ghost eyes returning to house
-3. Main menu / pause
+- [ ] **Fix for main menu shadows / opaque / overlay**
 
 ## DONE
 
@@ -72,3 +66,4 @@
 - [x] **Cruise Elroy (Blinky)** — `Simulation` passes `cruiseElroyChaseSpeedMul` into `Ghost::updateLogic` for slot 0 only in chase when not frightened; tiers at 20 and 10 remaining pellets
 - [x] **Power pellet flash warning** — `SNAPSHOT` sends `powerTimeLeft` per player; client uses `max(P0,P1)` in the last **3s** to toggle `GhostRenderer::setFrightenedEndFlash` and alternate `ghosts_power_pellet_1/2` textures (~2.5 Hz); non-textured fallback toggles blue/white
 - [x] **Server starts the game** and on connect the client can move after ready screen, but the game has already started and ghosts moved in already - the game should start after client joins / both clients join.
+- [x] **Add Doxygen documentation for the repo** - Documented the public APIs in `include/` folder by folder with class summaries and Doxygen comments for public methods, and added a root `Doxyfile` for generating the docs.

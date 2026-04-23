@@ -13,71 +13,189 @@ class ICollectible;
 #include "shared/InteractionResolver.hpp"
 #include "shared/Player.hpp"
 
+/**
+ * @brief Snapshot-friendly view of one player's state.
+ */
 struct PlayerStateView {
-    Vec2      position;
-    Direction facing;
-    int       score{0};
-    bool      powered{false};
-    float     powerTimeLeft{0.f};
-    int       livesLeft{3};
-    float     deathTimeLeft{0.f};
+    Vec2      position;            ///< Current player position in logic space.
+    Direction facing;              ///< Current player facing direction.
+    int       score{0};            ///< Current score total.
+    bool      powered{false};      ///< Whether a power pellet is active.
+    float     powerTimeLeft{0.f};  ///< Remaining power-pellet duration in seconds.
+    int       livesLeft{3};        ///< Remaining lives for the player.
+    float     deathTimeLeft{0.f};  ///< Remaining death animation or respawn delay in seconds.
 };
 
-enum class ScoreEvent { Pellet, PowerPellet, Ghost, BonusFruit };
+/**
+ * @brief Categories of score events emitted by the simulation.
+ */
+enum class ScoreEvent {
+    Pellet,       ///< Standard pellet score event.
+    PowerPellet,  ///< Power pellet score event.
+    Ghost,        ///< Frightened ghost score popup event.
+    BonusFruit,   ///< Bonus fruit score popup event.
+};
 
+/**
+ * @brief Authoritative gameplay simulation for the active Pac-Man match.
+ *
+ * `Simulation` owns players, ghosts, the level state, collectible handling,
+ * frightened/scatter/chase timing, and the event queues consumed by the server.
+ */
 class Simulation {
    public:
+    /**
+     * @brief Constructs an empty simulation instance.
+     */
     Simulation();
 
+    /**
+     * @brief Loads and initializes a level without resetting the whole match.
+     *
+     * @param levelNumber One-based level index to initialize.
+     */
     void initLevel(int levelNumber);
 
-    /// Full reset (players, ghosts, house timers, scatter schedule) and load `levelNumber`.
+    /**
+     * @brief Resets the full match state and loads the requested level.
+     *
+     * @param levelNumber One-based level index to initialize after the reset.
+     */
     void resetForNewMatch(int levelNumber);
 
-    // Set desired direction for player index 0 or 1
+    /**
+     * @brief Queues a desired movement direction for one player.
+     *
+     * @param playerIndex Player slot index (`0` or `1`).
+     * @param d Desired direction.
+     */
     void setDesired(int playerIndex, Direction d);
 
-    // Fixed-step update
+    /**
+     * @brief Advances the full simulation by one fixed step.
+     *
+     * @param dt Elapsed time in seconds.
+     * @param scaledTileSize Tile size after scaling.
+     * @param scale World scale factor.
+     */
     void step(float dt, float scaledTileSize, float scale);
 
-    // Accessors
-    PlayerStateView     getPlayerState(int playerIndex) const;
+    /**
+     * @brief Returns a compact read-only view of one player.
+     *
+     * @param playerIndex Player slot index (`0` or `1`).
+     * @return Snapshot-friendly player state view.
+     */
+    PlayerStateView getPlayerState(int playerIndex) const;
+
+    /**
+     * @brief Returns the current level state.
+     *
+     * @return Read-only reference to the level manager.
+     */
     const LevelManager& getLevel() const {
         return level;
     }
 
-    // Ghost access by index [0=Blinky, 1=Pinky, 2=Inky, 3=Clyde]
-    Vec2      getGhostPosition(int ghostIndex) const;
-    Direction getGhostFacing(int ghostIndex) const;
-    bool      isGhostActive(int ghostIndex) const;
-    bool      isGhostFrightened(int ghostIndex) const;
+    /**
+     * @brief Returns the position of a ghost by slot index.
+     *
+     * @param ghostIndex Ghost slot index (`0` to `3`).
+     * @return Current ghost position.
+     */
+    Vec2 getGhostPosition(int ghostIndex) const;
 
+    /**
+     * @brief Returns the facing direction of a ghost by slot index.
+     *
+     * @param ghostIndex Ghost slot index (`0` to `3`).
+     * @return Current ghost facing direction.
+     */
+    Direction getGhostFacing(int ghostIndex) const;
+
+    /**
+     * @brief Checks whether a ghost is currently active in play.
+     *
+     * @param ghostIndex Ghost slot index (`0` to `3`).
+     * @return `true` if the ghost is active outside of respawn.
+     */
+    bool isGhostActive(int ghostIndex) const;
+
+    /**
+     * @brief Checks whether a ghost is currently frightened.
+     *
+     * @param ghostIndex Ghost slot index (`0` to `3`).
+     * @return `true` if frightened mode is active for that ghost.
+     */
+    bool isGhostFrightened(int ghostIndex) const;
+
+    /**
+     * @brief Event describing a collectible that was consumed this tick.
+     */
     struct ConsumedPellet {
-        int                 x{0};
-        int                 y{0};
-        const ICollectible* item{nullptr};
+        int                 x{0};           ///< Tile X coordinate of the consumed collectible.
+        int                 y{0};           ///< Tile Y coordinate of the consumed collectible.
+        const ICollectible* item{nullptr};  ///< Static collectible definition that was consumed.
     };
+
+    /**
+     * @brief Moves consumed-collectible events into an output vector.
+     *
+     * @param out Destination vector receiving the drained events.
+     */
     void drainConsumed(std::vector<ConsumedPellet>& out);
 
+    /**
+     * @brief Event describing a ghost score popup emitted this tick.
+     */
     struct EatenGhostEvent {
-        float x;
-        float y;
-        int   points;
+        float x;       ///< Popup world X coordinate.
+        float y;       ///< Popup world Y coordinate.
+        int   points;  ///< Score awarded for the frightened ghost.
     };
+
+    /**
+     * @brief Moves ghost-eaten events into an output vector.
+     *
+     * @param out Destination vector receiving the drained events.
+     */
     void drainEatenGhosts(std::vector<EatenGhostEvent>& out);
 
+    /**
+     * @brief Event describing a tile value that changed on the grid.
+     */
     struct GridTileUpdate {
-        std::uint16_t x{0};
-        std::uint16_t y{0};
-        std::uint8_t  tile{0};  // TileType enum value
+        std::uint16_t x{0};     ///< Tile X coordinate that changed.
+        std::uint16_t y{0};     ///< Tile Y coordinate that changed.
+        std::uint8_t  tile{0};  ///< New raw `TileType` value stored at the tile.
     };
+
+    /**
+     * @brief Moves pending grid tile updates into an output vector.
+     *
+     * @param out Destination vector receiving the drained tile changes.
+     */
     void drainGridTileUpdates(std::vector<GridTileUpdate>& out);
 
+    /**
+     * @brief Moves fruit score popup events into an output vector.
+     *
+     * @param out Destination vector receiving the drained fruit popup events.
+     */
     void drainFruitPopups(std::vector<EatenGhostEvent>& out);
 
-    /// At least one player has no lives (match cannot continue).
+    /**
+     * @brief Checks whether the match is lost because a player ran out of lives.
+     *
+     * @return `true` if the match cannot continue.
+     */
     bool isMatchLost() const;
-    /// All clearable pellets on the current level are gone.
+
+    /**
+     * @brief Checks whether all clearable pellets on the level are gone.
+     *
+     * @return `true` if the current level has been cleared.
+     */
     bool isLevelCleared() const;
 
    private:

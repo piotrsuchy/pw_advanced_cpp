@@ -15,20 +15,52 @@
 #include "graphics/PacmanRenderer.hpp"
 #include "shared/GameTypes.hpp"
 
-// Names for the 4 ghost slots — purely for clarity at call sites
-enum GhostSlot { Blinky = 0, Pinky = 1, Inky = 2, Clyde = 3 };
+/**
+ * @brief Named indices for the four ghost slots sent by the server.
+ */
+enum GhostSlot {
+    Blinky = 0,  ///< Red ghost that directly chases player 0.
+    Pinky  = 1,  ///< Pink ghost that targets tiles ahead of player 0.
+    Inky   = 2,  ///< Cyan ghost whose chase target depends on both players.
+    Clyde  = 3,  ///< Orange ghost that alternates between chase and retreat.
+};
 
-enum class ClientFlow { MainMenu, InGame };
-enum class SubMenu { None, Options };
+/**
+ * @brief Top-level flow states for the client application.
+ */
+enum class ClientFlow {
+    MainMenu,  ///< Client is showing menus and is not actively playing.
+    InGame,    ///< Client is connected to a running match view.
+};
 
-// Encapsulates the networked Pac-Man client:
-//   - Main menu → connect → READY → play (pause / end screens)
-//   - Sends input, PAUSE, RESTART; applies SNAPSHOT / LEVEL
-//   - Renders with SFML
+/**
+ * @brief Submenu states shown from the main menu.
+ */
+enum class SubMenu {
+    None,     ///< No submenu overlay is currently visible.
+    Options,  ///< The options overlay is currently open.
+};
+
+/**
+ * @brief Networked SFML client for the multiplayer Pac-Man game.
+ *
+ * The client owns the application window, menus, renderers, audio playback,
+ * and the TCP connection used to mirror authoritative server state.
+ */
 class GameClient {
    public:
+    /**
+     * @brief Creates a client configured for one player slot and server target.
+     *
+     * @param serverIp Server IP address to connect to.
+     * @param port TCP port exposed by the game server.
+     * @param localPlayerIndex Local player slot index used by the server.
+     */
     GameClient(sf::IpAddress serverIp, unsigned short port, int localPlayerIndex);
 
+    /**
+     * @brief Runs the main client loop until the window closes.
+     */
     void run();
 
    private:
@@ -93,14 +125,18 @@ class GameClient {
     GhostRenderer    g0_, g1_, g2_, g3_;
 
     // Player state (received from server)
-    float     p0x_{120.f}, p0y_{120.f};
-    float     p1x_{680.f}, p1y_{480.f};
-    uint16_t  score0_{0}, score1_{0};
-    unsigned  lives0_{3}, lives1_{3};
-    bool      pow0_{false}, pow1_{false};
-    float     powerTime0_{0.f}, powerTime1_{0.f};
-    /// Single clock for power-pellet end flash (last ~3s); shared by all GhostRenderers so it is not reset by
-    /// per-ghost setFrightened toggles or one-frame snapshot glitches.
+    float    p0x_{120.f}, p0y_{120.f};
+    float    p1x_{680.f}, p1y_{480.f};
+    uint16_t score0_{0}, score1_{0};
+    unsigned lives0_{3}, lives1_{3};
+    bool     pow0_{false}, pow1_{false};
+    float    powerTime0_{0.f}, powerTime1_{0.f};
+    /**
+     * @brief Shared phase for the power-pellet end flash animation.
+     *
+     * A single clock keeps all ghost flash states in sync and avoids resets from
+     * per-ghost frightened toggles or one-frame snapshot glitches.
+     */
     float     powerFrightenPhase_{0.f};
     Direction f0_{Direction::Right}, f1_{Direction::Left};
 

@@ -1,2 +1,8 @@
+#pragma once
 
-static constexpr int tileSize = 64;  // Standardize to 64x64
+/**
+ * @brief Base tile size used by the renderers.
+ *
+ * All maze textures and sprite placement logic assume this unscaled tile size.
+ */
+static constexpr int tileSize = 64;

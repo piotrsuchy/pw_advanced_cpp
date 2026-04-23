@@ -1,11 +1,15 @@
 #pragma once
 
-// Shared identifiers for gameplay audio. Playback is client-only (SFML); the server
-// never links audio — cues are derived from snapshot deltas on the client.
+/**
+ * @brief Identifiers for gameplay audio events recognized by the client.
+ *
+ * Playback is client-only; the server never links audio and instead exposes
+ * enough state for the client to infer which cue should be played.
+ */
 enum class AudioCue {
-    PelletChomp,
-    PowerPellet,
-    GhostEaten,
-    PacmanDeath,
-    LevelIntroJingle,
+    PelletChomp,       ///< Standard pellet collection sound.
+    PowerPellet,       ///< Power pellet pickup sound.
+    GhostEaten,        ///< Frightened ghost score sound.
+    PacmanDeath,       ///< Pac-Man death sound.
+    LevelIntroJingle,  ///< Intro jingle played before the round begins.
 };

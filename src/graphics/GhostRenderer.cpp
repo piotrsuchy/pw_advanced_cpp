@@ -64,9 +64,9 @@ void GhostRenderer::draw(sf::RenderWindow& window) {
     if (hasTextures) {
         if (frightened && frightLoaded) {
             // Steady blue vs blue/white flash in last seconds of power (see GameClient for threshold)
-            const bool         flashBlueWhite = frightenedEndFlash;
-            const int          frame = flashBlueWhite ? (static_cast<int>(std::floor(frightenFlashPhaseT_ * 5.f)) % 2) : 0;
-            const sf::Texture& ft    = (frame == 0) ? fright1 : fright2;
+            const bool flashBlueWhite = frightenedEndFlash;
+            const int  frame      = flashBlueWhite ? (static_cast<int>(std::floor(frightenFlashPhaseT_ * 5.f)) % 2) : 0;
+            const sf::Texture& ft = (frame == 0) ? fright1 : fright2;
             sprite.setTexture(ft, true);
             window.draw(sprite);
             return;

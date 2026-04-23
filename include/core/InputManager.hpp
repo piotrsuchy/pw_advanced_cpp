@@ -4,18 +4,41 @@
 
 #include "shared/GameTypes.hpp"
 
+/**
+ * @brief Buffers the latest movement input coming from SFML keyboard events.
+ *
+ * The client uses this helper to convert raw window events into a persistent
+ * desired direction that can be sent to the server or consumed by local logic.
+ */
 class InputManager {
    public:
-    // call once for every SFML event
+    /**
+     * @brief Consumes one SFML event and updates the queued direction if needed.
+     *
+     * @param e Event received from the render window.
+     */
     void handleEvent(const sf::Event& e);
 
-    // returns the queued direction (persists until a new key is pressed)
+    /**
+     * @brief Returns the currently queued direction.
+     *
+     * The direction remains queued until another key press overrides it or
+     * `clearQueuedDirection()` is called.
+     *
+     * @return The buffered desired direction.
+     */
     Direction popQueuedDirection();
 
-    // returns the desired direction without modifying it (non-destructive read)
+    /**
+     * @brief Returns the queued direction without clearing or modifying it.
+     *
+     * @return The buffered desired direction.
+     */
     Direction getDesiredDirection() const;
 
-    // clears the queued direction (call when turn is successfully applied)
+    /**
+     * @brief Clears the queued direction after it has been applied.
+     */
     void clearQueuedDirection();
 
    private:

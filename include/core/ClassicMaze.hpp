@@ -2,7 +2,13 @@
 #pragma once
 #include <vector>
 
-// 0 = Empty, 1 = Wall, 2 = Pellet, 3 = Power Pellet (bonus fruit is spawned by Simulation, not stored in the map)
+/**
+ * @brief Default classic Pac-Man maze encoded as integer tile values.
+ *
+ * Value mapping: `0 = Empty`, `1 = Wall`, `2 = Pellet`, `3 = Power Pellet`.
+ * Bonus fruit is spawned dynamically by `Simulation` and is therefore not part
+ * of this static layout.
+ */
 inline const std::vector<std::vector<int>> CLASSIC_MAZE = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1},

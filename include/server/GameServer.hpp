@@ -8,17 +8,28 @@
 #include "shared/Match.hpp"
 #include "shared/Simulation.hpp"
 
-// Encapsulates the authoritative game server:
-//   - Accepts up to 2 TCP clients
-//   - Match starts in Waiting: no simulation steps until every connected client sends PLAYER_READY
-//   - Drives Simulation at a fixed tick rate; Match tracks game phase (playing / over / level clear)
-//   - Broadcasts SNAPSHOT packets each tick
-//   - Sends the full LEVEL packet on connect
+/**
+ * @brief Authoritative multiplayer server for the Pac-Man match.
+ *
+ * The server accepts clients, waits for readiness, advances the simulation at
+ * a fixed tick rate, and broadcasts snapshots and level state.
+ */
 class GameServer {
    public:
+    /**
+     * @brief Creates a server bound to a TCP port and tick rate.
+     *
+     * @param port TCP port to listen on.
+     * @param tickHz Fixed simulation tick rate in Hertz.
+     */
     explicit GameServer(unsigned short port = 54000, int tickHz = 60);
 
-    // Blocking main loop; match end pauses the sim until clients request RESTART.
+    /**
+     * @brief Runs the blocking server loop.
+     *
+     * The simulation remains paused after match end until clients request a
+     * restart.
+     */
     void run();
 
    private:

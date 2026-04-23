@@ -4,20 +4,42 @@
 
 struct Vec2;  // Forward declaration from PacmanLogic.hpp or GameTypes.hpp
 
-// Pure virtual interface for all game entities
+/**
+ * @brief Common logic-side interface implemented by movable game entities.
+ */
 class IEntity {
    public:
+    /**
+     * @brief Virtual destructor for polymorphic entity usage.
+     */
     virtual ~IEntity() = default;
 
-    // Logic update step
+    /**
+     * @brief Advances the entity by one logic step.
+     *
+     * @param dt Elapsed time in seconds.
+     */
     virtual void update(float dt) = 0;
 
-    // Get the entity's position in grid/logic coordinates
+    /**
+     * @brief Returns the entity position in logic-space coordinates.
+     *
+     * @return Current position.
+     */
     virtual Vec2 getPosition() const = 0;
 
-    // Set the entity's position
+    /**
+     * @brief Sets the entity position.
+     *
+     * @param x X coordinate in logic space.
+     * @param y Y coordinate in logic space.
+     */
     virtual void setPosition(float x, float y) = 0;
 
-    // Get the direction the entity is currently facing
+    /**
+     * @brief Returns the direction the entity is currently facing.
+     *
+     * @return Current facing direction.
+     */
     virtual Direction getFacing() const = 0;
 };
