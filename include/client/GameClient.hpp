@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Network.hpp>
 #include <array>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -16,16 +17,17 @@
 // Names for the 4 ghost slots — purely for clarity at call sites
 enum GhostSlot { Blinky = 0, Pinky = 1, Inky = 2, Clyde = 3 };
 
+enum class ClientFlow { MainMenu, InGame };
+enum class SubMenu { None, Options };
+
 // Encapsulates the networked Pac-Man client:
-//   - Connects to the server
-//   - Sends player input
-//   - Receives and parses SNAPSHOT / LEVEL packets
-//   - Renders the game using SFML
+//   - Main menu → connect → READY → play (pause / end screens)
+//   - Sends input, PAUSE, RESTART; applies SNAPSHOT / LEVEL
+//   - Renders with SFML
 class GameClient {
    public:
-    explicit GameClient(sf::IpAddress serverIp, unsigned short port = 54000);
+    GameClient(sf::IpAddress serverIp, unsigned short port, int localPlayerIndex);
 
-    // Blocking game loop — returns when the window is closed
     void run();
 
    private:
@@ -36,23 +38,50 @@ class GameClient {
     // --- Per-frame operations ---
     void processWindowEvents();
     void sendInput();
+    void sendSimplePacket(const char* kind);
     void receivePackets();
-    void updateAnimations();
+    void updateAnimations(float dt);
     void render();
+    void disconnectToMenu();
+    bool connectToServer();
+    bool canPlayerSteer() const;
+
+    // --- UI ---
+    void handleMainMenuKey(sf::Keyboard::Key k);
+    void drawMainMenu();
+    void drawOptionsOverlay();
+    void renderStatusLine(const char* line);
+    void drawEndScreen(bool victory);
+    void drawPauseOverlay();
+    void drawReadyOverlay();
+    void renderDimBackground(float alpha);
 
     // --- Packet parsers ---
     void processSnapshot(sf::Packet& pkt);
     void processLevel(sf::Packet& pkt);
 
     // --- Rendering helpers ---
-    void renderGhosts();
     void renderHUD();
     void renderPopups();
+    void drawCenteredText(const sf::Text& t, float y);
 
     // Network
     sf::TcpSocket  socket_;
     sf::IpAddress  serverIp_;
     unsigned short port_;
+    int            localPlayerIndex_{0};
+
+    // UI flow
+    ClientFlow  flow_{ClientFlow::MainMenu};
+    SubMenu     subMenu_{SubMenu::None};
+    int         mainMenuIndex_{0};
+    float       readyTimer_{0.f};
+    bool        haveLevel_{false};
+    std::string menuError_;
+    float       menuErrorTime_{0.f};
+
+    bool      serverPaused_{false};
+    sf::Uint8 matchOutcome_{0};
 
     // Window & rendering
     sf::RenderWindow window_;
@@ -65,7 +94,9 @@ class GameClient {
     float     p0x_{120.f}, p0y_{120.f};
     float     p1x_{680.f}, p1y_{480.f};
     uint16_t  score0_{0}, score1_{0};
+    unsigned  lives0_{3}, lives1_{3};
     bool      pow0_{false}, pow1_{false};
+    float     powerTime0_{0.f}, powerTime1_{0.f};
     Direction f0_{Direction::Right}, f1_{Direction::Left};
 
     // Ghost state (received from server)

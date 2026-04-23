@@ -46,6 +46,14 @@ class LevelManager {
     // Returns count of remaining pellets (Pellet + PowerPellet, excludes Cherry)
     int getRemainingPellets() const;
 
+    /// True when `tileY` is the row where side tunnels connect (used for ghost slowdown).
+    bool isHorizontalGhostTunnelRow(int tileY) const {
+        return ghostTunnelRowY_ >= 0 && tileY == ghostTunnelRowY_;
+    }
+
    private:
+    void recomputeDerivedFields();
+
     std::vector<std::vector<TileType>> grid;
+    int                                ghostTunnelRowY_{-1};
 };

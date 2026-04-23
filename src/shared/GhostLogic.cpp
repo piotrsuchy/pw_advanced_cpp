@@ -84,7 +84,7 @@ bool Ghost::canMove(Direction dir, const LevelManager& lvl, float tile, float of
 }
 
 void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSize, float scale, Vec2 pac0Pos,
-                        Direction pac0Facing, Vec2 pac1Pos, GhostMode mode) {
+                        Direction pac0Facing, Vec2 pac1Pos, GhostMode mode, float cruiseElroyChaseSpeedMul) {
     const float offX = (800.f - level.getWidth() * scaledTileSize) / 2.f;
     const float offY = (600.f - level.getHeight() * scaledTileSize) / 2.f;
 
@@ -152,8 +152,15 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
         direction = bestDir;
     }
 
-    // Move — frightened ghosts run at 60% of normal speed.
-    float v = (isFrightened() ? speed * 0.6f : speed) * scale;
+    // Move — frightened ghosts run at 60% of normal speed; classic tunnel is slower still.
+    const int  rowForTunnel = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
+    const bool inSideTunnel = (direction == Direction::Left || direction == Direction::Right) &&
+                              level.isHorizontalGhostTunnelRow(rowForTunnel);
+    // Pac-Man style: ghosts move at ~40% in the horizontal wrap tunnel; use 0.5 as a clear game feel.
+    static constexpr float kTunnelGhostSpeedMul = 0.5f;
+    float                  v                    = (isFrightened() ? speed * 0.6f : speed) * scale;
+    if (inSideTunnel) v *= kTunnelGhostSpeedMul;
+    v *= cruiseElroyChaseSpeedMul;
     switch (direction) {
         case Direction::Up:
             position.y -= v * dt;
@@ -173,7 +180,7 @@ void Ghost::updateLogic(float dt, const LevelManager& level, float scaledTileSiz
 
     // Push out of walls.
     int tileX = static_cast<int>(std::floor((position.x - offX) / scaledTileSize));
-    int tileY = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));
+    int tileY = static_cast<int>(std::floor((position.y - offY) / scaledTileSize));  // after move
     if (level.getTile(tileX, tileY) == TileType::Wall) {
         switch (direction) {
             case Direction::Up:

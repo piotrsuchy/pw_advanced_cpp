@@ -30,6 +30,9 @@ class Simulation {
 
     void initLevel(int levelNumber);
 
+    /// Full reset (players, ghosts, house timers, scatter schedule) and load `levelNumber`.
+    void resetForNewMatch(int levelNumber);
+
     // Set desired direction for player index 0 or 1
     void setDesired(int playerIndex, Direction d);
 

@@ -10,6 +10,8 @@ class GhostRenderer {
 
     void setPosition(float x, float y);
     void setFrightened(bool f);
+    /// When true, draw alternating blue/white (based on setFrightened) for last seconds of power.
+    void setFrightenedEndFlash(bool on);
     void setBaseColor(const sf::Color& c);
     void setFacing(Direction d);
     void tick(float dt, float scale);
@@ -23,6 +25,8 @@ class GhostRenderer {
     // Fallback simple shape
     sf::CircleShape body;
     bool            frightened{false};
+    bool            frightenedEndFlash{false};
+    float           frightenedFlashT_{0.f};
 
     // Textured sprite path
     bool        hasTextures{false};

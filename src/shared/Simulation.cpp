@@ -23,6 +23,29 @@ void Simulation::initLevel(int levelNumber) {
     initializedPositions = false;
 }
 
+void Simulation::resetForNewMatch(int levelNumber) {
+    players[0] = Player(0);
+    players[1] = Player(1);
+    ghosts[0]  = std::make_unique<Ghost>(std::make_unique<BlinkyAI>());
+    ghosts[1]  = std::make_unique<Ghost>(std::make_unique<PinkyAI>());
+    ghosts[2]  = std::make_unique<Ghost>(std::make_unique<InkyAI>());
+    ghosts[3]  = std::make_unique<Ghost>(std::make_unique<ClydeAI>());
+
+    initializedPositions = false;
+    ghostHomeX = ghostHomeY = houseCenterX = houseCenterY = houseExitX = houseExitY = 0.f;
+    for (int i = 0; i < 4; ++i) {
+        ghostState[i]        = GhostState::InHouse;
+        ghostReleaseTimer[i] = 0.5f + i * 1.0f;
+        ghostRespawn[i]      = 0.f;
+    }
+    consumedThisTick.clear();
+    eatenGhostsThisTick.clear();
+    ghostMode  = GhostMode::Scatter;
+    phaseIndex = 0;
+    phaseTimer = PHASE_SCHEDULE[0];
+    initLevel(levelNumber);
+}
+
 void Simulation::setDesired(int playerIndex, Direction d) {
     if (playerIndex < 0 || playerIndex > 1) return;
     players[playerIndex].getPacman().setDesired(d);
@@ -133,7 +156,16 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
             updateGhostExiting(gi, dt, scaledTileSize, scale);
         }
         if (ghostState[gi] == GhostState::Roaming) {
-            g.updateLogic(dt, level, scaledTileSize, scale, p0, p0dir, p1, ghostMode);
+            float elroy = 1.f;
+            if (gi == 0 && ghostMode == GhostMode::Chase && !g.isFrightened()) {
+                // Cruise Elroy: Blinky accelerates in chase as the maze is cleared (two tiers).
+                const int pel = level.getRemainingPellets();
+                if (pel <= 10)
+                    elroy = 1.12f;
+                else if (pel <= 20)
+                    elroy = 1.08f;
+            }
+            g.updateLogic(dt, level, scaledTileSize, scale, p0, p0dir, p1, ghostMode, elroy);
         }
     }
 

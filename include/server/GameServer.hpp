@@ -17,17 +17,19 @@ class GameServer {
    public:
     explicit GameServer(unsigned short port = 54000, int tickHz = 60);
 
-    // Blocking main loop — returns on game-over or level-complete
+    // Blocking main loop; match end pauses the sim until clients request RESTART.
     void run();
 
    private:
     void acceptConnections();
     void processClientInputs();
     void tick();
+    void resetMatch();
+    void broadcastLevelToAll();
 
     sf::Packet buildLevelPacket() const;
     sf::Packet buildSnapshotPacket(const std::vector<Simulation::ConsumedPellet>&  consumed,
-                                   const std::vector<Simulation::EatenGhostEvent>& ghostScores) const;
+                                   const std::vector<Simulation::EatenGhostEvent>& ghostScores);
 
     unsigned short port_;
     int            tickHz_;
@@ -41,6 +43,7 @@ class GameServer {
 
     Simulation                            sim_;
     Match                                 match_;
+    bool                                  simPaused_{false};
     std::chrono::steady_clock::time_point lastTick_;
     std::chrono::milliseconds             stepDuration_;
 };

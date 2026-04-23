@@ -90,6 +90,10 @@ void GameServer::processClientInputs() {
                 sf::Uint8  dir;
                 in >> seq >> dir;
                 sim_.setDesired(i, static_cast<Direction>(dir));
+            } else if (kind == "PAUSE" && match_.phase() == MatchPhase::Playing) {
+                simPaused_ = !simPaused_;
+            } else if (kind == "RESTART" && (match_.isGameOver() || match_.isLevelComplete())) {
+                resetMatch();
             }
         } else if (st == sf::Socket::Disconnected) {
             selector_.remove(*clients_[i]);
@@ -101,17 +105,41 @@ void GameServer::processClientInputs() {
     }
 }
 
-void GameServer::tick() {
-    sim_.step(1.f / tickHz_, scaledTile_, scale_);
-    match_.updateAfterStep(sim_);
+void GameServer::resetMatch() {
+    simPaused_ = false;
+    sim_.resetForNewMatch(1);
+    match_.resetToPlaying();
+    std::cout << "[SERVER] Match restarted.\n";
+    broadcastLevelToAll();
+}
 
-    if (match_.isGameOver()) {
-        std::cout << "[SERVER] Game over.\n";
-        std::exit(0);
+void GameServer::broadcastLevelToAll() {
+    sf::Packet lvl = buildLevelPacket();
+    for (int i = 0; i < 2; ++i) {
+        if (!connected_[i]) continue;
+        clients_[i]->send(lvl);
     }
-    if (match_.isLevelComplete()) {
-        std::cout << "[SERVER] Level complete!\n";
-        std::exit(0);
+}
+
+void GameServer::tick() {
+    const bool inActiveRound = (match_.phase() == MatchPhase::Playing) && !simPaused_;
+    if (inActiveRound) {
+        sim_.step(1.f / tickHz_, scaledTile_, scale_);
+        match_.updateAfterStep(sim_);
+    }
+
+    static bool loggedGo = false, loggedWin = false;
+    if (match_.isGameOver() && !loggedGo) {
+        std::cout << "[SERVER] Game over (send RESTART to play again).\n";
+        loggedGo = true;
+    }
+    if (match_.isLevelComplete() && !loggedWin) {
+        std::cout << "[SERVER] Level complete (send RESTART to play again).\n";
+        loggedWin = true;
+    }
+    if (match_.phase() == MatchPhase::Playing) {
+        loggedGo  = false;
+        loggedWin = false;
     }
 
     std::vector<Simulation::ConsumedPellet>  consumed;
@@ -152,7 +180,7 @@ sf::Packet GameServer::buildLevelPacket() const {
 }
 
 sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::ConsumedPellet>&  consumed,
-                                           const std::vector<Simulation::EatenGhostEvent>& ghostScores) const {
+                                           const std::vector<Simulation::EatenGhostEvent>& ghostScores) {
     auto s0 = sim_.getPlayerState(0);
     auto s1 = sim_.getPlayerState(1);
 
@@ -161,10 +189,10 @@ sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::Consume
         // Player 0
         << (float)s0.position.x << (float)s0.position.y << (sf::Uint16)s0.score << (sf::Uint8)(s0.powered ? 1 : 0)
         << (sf::Uint8)s0.livesLeft
-        << (float)s0.deathTimeLeft
+        << (float)s0.deathTimeLeft << (float)s0.powerTimeLeft
         // Player 1
         << (float)s1.position.x << (float)s1.position.y << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0)
-        << (sf::Uint8)s1.livesLeft << (float)s1.deathTimeLeft;
+        << (sf::Uint8)s1.livesLeft << (float)s1.deathTimeLeft << (float)s1.powerTimeLeft;
 
     // 4 ghost positions + facings
     for (int gi = 0; gi < 4; ++gi) {
@@ -195,6 +223,14 @@ sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::Consume
     for (auto& ge : ghostScores) {
         pkt << (float)ge.x << (float)ge.y << (sf::Uint16)ge.points;
     }
+
+    pkt << (sf::Uint8)(simPaused_ ? 1 : 0);
+    sf::Uint8 out = 0;
+    if (match_.isGameOver())
+        out = 1;
+    else if (match_.isLevelComplete())
+        out = 2;
+    pkt << out;
 
     return pkt;
 }

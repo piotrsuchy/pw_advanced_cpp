@@ -32,13 +32,23 @@ void GhostRenderer::setPosition(float x, float y) {
 
 void GhostRenderer::setFrightened(bool f) {
     frightened = f;
+    if (!f) {
+        frightenedEndFlash = false;
+        frightenedFlashT_ = 0.f;
+    }
+}
+
+void GhostRenderer::setFrightenedEndFlash(bool on) {
+    if (!frightenedEndFlash && on) frightenedFlashT_ = 0.f;
+    frightenedEndFlash = on;
 }
 
 void GhostRenderer::setFacing(Direction d) {
     facing = d;
 }
 
-void GhostRenderer::tick(float, float scale) {
+void GhostRenderer::tick(float dt, float scale) {
+    if (frightened && frightenedEndFlash) frightenedFlashT_ += dt;
     body.setScale(scale / 1.0f, scale / 1.0f);
     if (hasTextures) sprite.setScale(scale, scale);
 }
@@ -46,7 +56,6 @@ void GhostRenderer::tick(float, float scale) {
 void GhostRenderer::draw(sf::RenderWindow& window) {
     static sf::Texture fright1, fright2;
     static bool        frightLoaded = false;
-    static float       frightTimer  = 0.f;
 
     if (!frightLoaded) {
         frightLoaded = fright1.loadFromFile("assets/textures/ghosts/ghosts_power_pellet_1.png") &&
@@ -55,9 +64,11 @@ void GhostRenderer::draw(sf::RenderWindow& window) {
 
     if (hasTextures) {
         if (frightened && frightLoaded) {
-            // Alternate 8 times per second
-            frightTimer += 0.016f;
-            const sf::Texture& ft = ((static_cast<int>(frightTimer * 8) % 2) == 0) ? fright1 : fright2;
+            // Steady blue vs blue/white flash in last seconds of power (see GameClient for threshold)
+            const bool  flashBlueWhite = frightenedEndFlash;
+            const int   frame =
+                flashBlueWhite ? (static_cast<int>(std::floor(frightenedFlashT_ * 5.f)) % 2) : 0;
+            const sf::Texture& ft = (frame == 0) ? fright1 : fright2;
             sprite.setTexture(ft, true);
             window.draw(sprite);
             return;
@@ -85,7 +96,11 @@ void GhostRenderer::draw(sf::RenderWindow& window) {
 
     if (frightened) {
         auto c = body.getFillColor();
-        body.setFillColor(sf::Color(0, 0, 255));
+        if (frightenedEndFlash) {
+            const int frame = static_cast<int>(std::floor(frightenedFlashT_ * 5.f)) % 2;
+            body.setFillColor(frame == 0 ? sf::Color(40, 40, 255) : sf::Color(255, 255, 255));
+        } else
+            body.setFillColor(sf::Color(0, 0, 255));
         window.draw(body);
         body.setFillColor(c);
     } else {

@@ -15,31 +15,18 @@
 | Ghost respawn from house | Working |
 | Cherries (2 fixed positions, 100 pts) | Working |
 | Client/server multiplayer architecture | Working |
+| Main menu, READY!, pause, game over / level win + retry | Working |
+| HUD lives + scores | Working (text) |
 | Tunnel wrapping (left/right edge wrap) | Working |
+| Ghosts slower in side tunnel (horizontal wrap row) | Working |
+| Scatter corners + chase/scatter reversal + Blinky Cruise Elroy | Working |
+| Power pellet end flash (ghosts blue/white in last 3s) | Working |
 
 ---
 
-### Architecture Tasks (from reviewer feedback)
+## BUG
 
-### Core Gameplay
-
-- [ ] **Ghost Speed in Tunnels** - Ghosts slow down in tunnels
-
-### Ghost Behavior
-
-- [ ] **Scatter Mode Corners** - Each ghost retreats to their "home corner" during scatter phases
-- [ ] **Direction Reversal on Mode Change** - Ghosts immediately reverse when switching chase↔scatter
-- [ ] **Elroy Mode** - Blinky speeds up when few pellets remain
-
-### Visual/UI
-
-- [ ] **Lives Display** - Visual icons showing remaining lives
-- [ ] **Ready/Start Screen** - "READY!" text before level starts
-- [ ] **Game Over Screen** - Victory/defeat screen with retry option
-- [ ] **Main Menu** - Start screen, options
-- [ ] **Pause Menu** - Ability to pause mid-game
-- [ ] **Power Pellet Flash Warning** - Ghosts blink white/blue as frightened time runs out
-- [ ] **Level Number Display** - "Level X" indicator
+- server starts the game and on connect the client can move after ready screen, but the game has already started and ghosts moved in already for example - fix it, the game should start after client joins / both clients join
 
 ### Audio
 
@@ -60,23 +47,12 @@
 
 ---
 
-## Suggested Priority Order
-
-### High Priority (Core Experience)
-
-1. ~~Level completion detection (win condition)~~ ✅
-2. ~~Tunnel wrapping~~ ✅
-3. ~~Scatter/chase mode cycling~~ ✅
-4. Lives display in HUD
-5. Game over / victory screen
-
 ### Medium Priority (Polish)
 
-1. Ready screen before level start
-2. Power pellet flash warning
-3. Ghost eyes returning to house
-4. Sound effects
-5. Main menu / pause
+1. Power pellet flash warning
+2. Ghost eyes returning to house
+3. Sound effects
+4. Main menu / pause
 
 ## DONE
 
@@ -94,3 +70,13 @@
         ghosts reverse direction on each transition; frightened state overrides)
 - [x] **Tunnel Wrapping** - Pac-Man and ghosts wrap horizontally through left/right tunnels
 - [x] **Level Completion** - Detection for "all pellets eaten" → win condition
+- [x] **Menus & match flow (client + server)** — Main menu (Play / Options with server address / Quit); "READY!" countdown after `LEVEL` sync; **P** or **Esc** toggles **authoritative pause** (server stops stepping); `SNAPSHOT` includes pause + match outcome; **Game over** and **level complete** overlays with **R** (restart) and **M** (main menu, disconnect); server no longer `exit(0)` on match end; `RESTART` runs `Simulation::resetForNewMatch(1)` and re-broadcasts `LEVEL`
+- [x] **Lives Display** - Lives per player in HUD (icons optional / polish)
+- [x] **Ready/Start Screen** - "READY!" text before level starts
+- [x] **Game Over Screen** - Victory/defeat screen with retry option
+- [x] **Main Menu** - Start screen, options
+- [x] **Pause Menu** - Ability to pause mid-game
+- [x] **Ghost Speed in Tunnels** — `LevelManager` picks the longest open-end row as the wrap tunnel; ghosts use 50% speed there when moving left/right (stacks with frightened 60%)
+- [x] **Scatter corners & chase↔scatter reverse** — Already implemented via per-ghost `getScatterTile()` and `updateGhostMode()` reversing roaming non-frightened ghosts
+- [x] **Cruise Elroy (Blinky)** — `Simulation` passes `cruiseElroyChaseSpeedMul` into `Ghost::updateLogic` for slot 0 only in chase when not frightened; tiers at 20 and 10 remaining pellets
+- [x] **Power pellet flash warning** — `SNAPSHOT` sends `powerTimeLeft` per player; client uses `max(P0,P1)` in the last **3s** to toggle `GhostRenderer::setFrightenedEndFlash` and alternate `ghosts_power_pellet_1/2` textures (~2.5 Hz); non-textured fallback toggles blue/white

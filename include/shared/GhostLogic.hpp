@@ -27,8 +27,10 @@ class Ghost : public IEntity {
     void reverseDirection();
 
     // Full AI-driven update.  mode is ignored while frightened.
+    /// `cruiseElroyChaseSpeedMul` is Cruise Elroy (classic): Blinky-only chase speed-up when few pellets
+    /// remain; always pass 1 for non-Blinky (Simulation sets e.g. 1.08 / 1.12 for Blinky in chase).
     void updateLogic(float dt, const LevelManager& level, float scaledTileSize, float scale, Vec2 pac0Pos,
-                     Direction pac0Facing, Vec2 pac1Pos, GhostMode mode);
+                     Direction pac0Facing, Vec2 pac1Pos, GhostMode mode, float cruiseElroyChaseSpeedMul = 1.f);
 
    private:
     bool aligned(float tile, float offX, float offY) const;
