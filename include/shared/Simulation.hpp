@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "core/LevelManager.hpp"
+
+class ICollectible;
 #include "shared/GameTypes.hpp"
 #include "shared/GhostLogic.hpp"
 #include "shared/InteractionResolver.hpp"
@@ -21,10 +23,6 @@ struct PlayerStateView {
 };
 
 enum class ScoreEvent { Pellet, PowerPellet, Ghost, Cherry };
-
-static constexpr int POINTS_PELLET       = 10;
-static constexpr int POINTS_POWER_PELLET = 50;
-static constexpr int POINTS_CHERRY       = 100;
 
 class Simulation {
    public:
@@ -51,9 +49,9 @@ class Simulation {
     bool      isGhostFrightened(int ghostIndex) const;
 
     struct ConsumedPellet {
-        int      x;
-        int      y;
-        TileType type;
+        int                 x{0};
+        int                 y{0};
+        const ICollectible* item{nullptr};
     };
     void drainConsumed(std::vector<ConsumedPellet>& out);
 

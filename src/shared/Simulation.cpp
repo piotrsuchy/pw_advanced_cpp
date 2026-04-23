@@ -3,6 +3,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "core/ICollectible.hpp"
+
 // Helper: compute pixel offsets from grid/window dimensions
 static void computeOffsets(const LevelManager& level, float scaledTileSize, float& offX, float& offY) {
     offX = (800.f - level.getWidth() * scaledTileSize) / 2.f;
@@ -153,19 +155,16 @@ void Simulation::step(float dt, float scaledTileSize, float scale) {
         int  curX = static_cast<int>(std::floor((p.x - offX) / scaledTileSize));
         int  curY = static_cast<int>(std::floor((p.y - offY) / scaledTileSize));
 
-        TileType consumed = level.collectPelletTyped(curX, curY);
-        if (consumed == TileType::Pellet) {
-            players[pi].addScore(POINTS_PELLET);
-            consumedThisTick.push_back({curX, curY, consumed});
-        } else if (consumed == TileType::PowerPellet) {
-            players[pi].addScore(POINTS_POWER_PELLET);
-            players[pi].setPowerTimer(10.0f);
-            players[pi].resetFrightenedEatCount();
-            for (auto& gp : ghosts) gp->setFrightened(10.0f);
-            consumedThisTick.push_back({curX, curY, consumed});
-        } else if (consumed == TileType::Cherry) {
-            players[pi].addScore(POINTS_CHERRY);
-            consumedThisTick.push_back({curX, curY, consumed});
+        const ICollectible* c = level.collectAt(curX, curY);
+        if (c) {
+            players[pi].addScore(c->points());
+            const float panic = c->frightenedModeDuration();
+            if (panic > 0.f) {
+                players[pi].setPowerTimer(panic);
+                players[pi].resetFrightenedEatCount();
+                for (auto& gp : ghosts) gp->setFrightened(panic);
+            }
+            consumedThisTick.push_back({curX, curY, c});
         }
 
         players[pi].tickPowerTimer(dt);

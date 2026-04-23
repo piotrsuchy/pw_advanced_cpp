@@ -28,7 +28,7 @@ if(SERVER_SOURCES)
   add_executable(pacman_server ${SERVER_SOURCES})
   target_link_libraries(pacman_server pacman_shared sfml-network sfml-system)
   # Logic-only dependency for level grid
-  target_sources(pacman_server PRIVATE src/core/LevelManager.cpp)
+  target_sources(pacman_server PRIVATE src/core/LevelManager.cpp src/core/ICollectible.cpp)
 endif()
 
 if(CLIENT_SOURCES)
@@ -40,6 +40,7 @@ if(CLIENT_SOURCES)
   target_sources(pacman_client PRIVATE
     src/core/InputManager.cpp
     src/core/LevelManager.cpp
+    src/core/ICollectible.cpp
     src/graphics/LevelRenderer.cpp
     src/graphics/PacmanRenderer.cpp
     src/graphics/GhostRenderer.cpp

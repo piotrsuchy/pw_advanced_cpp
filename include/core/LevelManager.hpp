@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <vector>
 
+class ICollectible;
+
 enum class TileType : int { Empty = 0, Wall = 1, Pellet = 2, PowerPellet = 3, Cherry = 4 };
 
 static TileType fromInt(int v) {
@@ -38,8 +40,8 @@ class LevelManager {
     }
 
     bool collectPellet(int x, int y);
-    // Returns the type of pellet consumed at (x,y), or TileType::Empty if none
-    TileType collectPelletTyped(int x, int y);
+    // Picks up whatever collectible is at (x,y), clears the cell; nullptr if nothing there.
+    const ICollectible* collectAt(int x, int y);
 
     // Returns count of remaining pellets (Pellet + PowerPellet, excludes Cherry)
     int getRemainingPellets() const;

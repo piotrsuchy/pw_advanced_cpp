@@ -21,7 +21,7 @@
 
 ### Architecture Tasks (from reviewer feedback)
 
-- [ ] **PowerUps ownership** — Power pellets are still a raw `TileType` in `LevelManager`; needs an `ICollectible` abstraction
+- [x] **PowerUps ownership** — `ICollectible` abstraction for map pickups
 - [ ] **Match / GameSession** — Extract game-phase state (waiting, playing, game-over, level-complete) from `Simulation` into a `Match` class
 
 ### Core Gameplay
@@ -85,6 +85,7 @@
 
 ## DONE
 
+- [x] **PowerUps / `ICollectible`** — Collectibles (pellet, power pellet, cherry) are described by `ICollectible` with points, power duration, level-clear counting, and network clear tags; `Simulation` no longer branches on `TileType` for scoring
 - [x] **Refactor `main_client.cpp` / `main_server.cpp`** — extracted into `GameClient` and `Server` classes; `main_*` files are now thin arg-parsing wrappers
 - [x] **Separate interface from implementation** — `IEntity` and `IGhostAI` are now pure-virtual interfaces; concrete classes implement them
 - [x] **Use polymorphism in Simulation** — `Simulation` uses `std::array<unique_ptr<Ghost>, 4>` with AI injected via strategy pattern

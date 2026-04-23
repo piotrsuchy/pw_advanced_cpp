@@ -1,6 +1,7 @@
 #include "core/LevelManager.hpp"
 
 #include "core/ClassicMaze.hpp"
+#include "core/ICollectible.hpp"
 
 void LevelManager::loadLevel(int lvl) {
     {
@@ -21,33 +22,27 @@ void LevelManager::loadFromInts(const std::vector<std::vector<int>>& intGrid) {
 }
 
 bool LevelManager::collectPellet(int x, int y) {
-    if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) {
-        return false;
-    }
-    if (grid[y][x] == TileType::Pellet || grid[y][x] == TileType::PowerPellet || grid[y][x] == TileType::Cherry) {
-        grid[y][x] = TileType::Empty;
-        return true;
-    }
-    return false;
+    return collectAt(x, y) != nullptr;
 }
 
-TileType LevelManager::collectPelletTyped(int x, int y) {
+const ICollectible* LevelManager::collectAt(int x, int y) {
     if (x < 0 || y < 0 || x >= getWidth() || y >= getHeight()) {
-        return TileType::Empty;
+        return nullptr;
     }
-    TileType t = grid[y][x];
-    if (t == TileType::Pellet || t == TileType::PowerPellet || t == TileType::Cherry) {
-        grid[y][x] = TileType::Empty;
-        return t;
+    const ICollectible* c = collectibleForTileType(static_cast<int>(grid[y][x]));
+    if (!c) {
+        return nullptr;
     }
-    return TileType::Empty;
+    grid[y][x] = TileType::Empty;
+    return c;
 }
 
 int LevelManager::getRemainingPellets() const {
     int count = 0;
     for (const auto& row : grid) {
         for (TileType tile : row) {
-            if (tile == TileType::Pellet || tile == TileType::PowerPellet) {
+            if (const ICollectible* c = collectibleForTileType(static_cast<int>(tile));
+                c && c->countsTowardLevelPelletTotal()) {
                 ++count;
             }
         }

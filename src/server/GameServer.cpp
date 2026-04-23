@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iostream>
 
+#include "core/ICollectible.hpp"
+
 static constexpr float WINDOW_W = 800.f;
 static constexpr float WINDOW_H = 600.f;
 
@@ -185,7 +187,7 @@ sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::Consume
     // Consumed pellet deltas
     for (auto& d : consumed) {
         pkt << static_cast<sf::Uint16>(d.x) << static_cast<sf::Uint16>(d.y)
-            << static_cast<sf::Uint8>(d.type == TileType::PowerPellet ? 2 : 1);
+            << static_cast<sf::Uint8>(d.item ? d.item->networkClearTag() : static_cast<std::uint8_t>(1));
     }
 
     // Ghost-eat score popups
