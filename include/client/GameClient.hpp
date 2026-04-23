@@ -7,6 +7,7 @@
 #include <tuple>
 #include <vector>
 
+#include "client/AudioManager.hpp"
 #include "core/InputManager.hpp"
 #include "core/LevelManager.hpp"
 #include "graphics/GhostRenderer.hpp"
@@ -120,6 +121,9 @@ class GameClient {
     // Animation state (estimated from positional deltas)
     float lp0x_{120.f}, lp0y_{120.f};
     float lp1x_{680.f}, lp1y_{480.f};
+
+    // Audio (snapshot edges + bundled assets)
+    AudioManager audio_;
 
     // Ephemeral score popups: (x, y, points, age_seconds)
     std::vector<std::tuple<float, float, int, float>> popups_;

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <string>
 
+#include "shared/AudioCue.hpp"
+
 static constexpr float kPowerPelletFlashWindowSec = 3.f;
 
 static constexpr const char* kMenuItems[]  = {"Play", "Options", "Quit"};
@@ -56,6 +58,7 @@ GameClient::GameClient(sf::IpAddress serverIp, unsigned short port, int localPla
     level_.loadLevel(1);
     setupGhostTextures();
     loadFont();
+    audio_.tryLoadBundled();
 }
 
 void GameClient::setupGhostTextures() {
@@ -144,7 +147,14 @@ void GameClient::run() {
 
         receivePackets();
 
-        if (flow_ == ClientFlow::InGame && haveLevel_ && readyTimer_ <= 0.f && matchOutcome_ == 0 && !playerReadySent_) {
+        {
+            const bool roundLive =
+                flow_ == ClientFlow::InGame && haveLevel_ && readyTimer_ <= 0.f && matchOutcome_ == 0;
+            audio_.setRoundBgm(roundLive);
+        }
+
+        if (flow_ == ClientFlow::InGame && haveLevel_ && readyTimer_ <= 0.f && matchOutcome_ == 0 &&
+            !playerReadySent_) {
             sendSimplePacket("PLAYER_READY");
             playerReadySent_ = true;
         }
@@ -168,17 +178,18 @@ bool GameClient::connectToServer() {
 
 void GameClient::disconnectToMenu() {
     socket_.disconnect();
-    flow_         = ClientFlow::MainMenu;
-    subMenu_      = SubMenu::None;
-    serverPaused_ = false;
-    matchOutcome_ = 0;
-    readyTimer_       = 0.f;
-    playerReadySent_  = false;
-    haveLevel_        = false;
+    flow_            = ClientFlow::MainMenu;
+    subMenu_         = SubMenu::None;
+    serverPaused_    = false;
+    matchOutcome_    = 0;
+    readyTimer_      = 0.f;
+    playerReadySent_ = false;
+    haveLevel_       = false;
     popups_.clear();
     seq_      = 0;
     lastSent_ = Direction::None;
     input_.clearQueuedDirection();
+    audio_.stopAllMusic();
 }
 
 void GameClient::processWindowEvents() {
@@ -284,6 +295,12 @@ void GameClient::receivePackets() {
 }
 
 void GameClient::processSnapshot(sf::Packet& pkt) {
+    const unsigned oldL0 = lives0_, oldL1 = lives1_;
+    bool           oldAnyFrightened = false;
+    for (int i = 0; i < 4; ++i) {
+        if (ghostActive_[i] && ghostFrightened_[i]) oldAnyFrightened = true;
+    }
+
     sf::Uint16 s0, s1;
     sf::Uint8  pw0, pw1, l0, l1;
     float      dt0, dt1;
@@ -294,8 +311,10 @@ void GameClient::processSnapshot(sf::Packet& pkt) {
     score1_ = s1;
     lives0_ = l0;
     lives1_ = l1;
-    pow0_   = (pw0 != 0);
-    pow1_   = (pw1 != 0);
+    if (l0 < oldL0 || l1 < oldL1) audio_.playCue(AudioCue::PacmanDeath);
+
+    pow0_ = (pw0 != 0);
+    pow1_ = (pw1 != 0);
 
     r0_.setDeathTimeLeft(dt0);
     r1_.setDeathTimeLeft(dt1);
@@ -317,10 +336,18 @@ void GameClient::processSnapshot(sf::Packet& pkt) {
         ghostFrightened_[gi] = (fr != 0);
     }
 
+    bool newAnyFrightened = false;
+    for (int i = 0; i < 4; ++i) {
+        if (ghostActive_[i] && ghostFrightened_[i]) newAnyFrightened = true;
+    }
+    if (newAnyFrightened != oldAnyFrightened) audio_.setFrightenedLoop(newAnyFrightened);
+
     for (sf::Uint16 k = 0; k < nPellets; ++k) {
         sf::Uint16 cx, cy;
         sf::Uint8  t;
         pkt >> cx >> cy >> t;
+        if (t == 1) audio_.playCue(AudioCue::PelletChomp);
+        if (t == 2) audio_.playCue(AudioCue::PowerPellet);
         if (t == 1 || t == 2) level_.setTile(cx, cy, TileType::Empty);
     }
 
@@ -328,6 +355,7 @@ void GameClient::processSnapshot(sf::Packet& pkt) {
         float      ex, ey;
         sf::Uint16 pts;
         pkt >> ex >> ey >> pts;
+        audio_.playCue(AudioCue::GhostEaten);
         popups_.emplace_back(ex, ey, static_cast<int>(pts), 0.f);
     }
 
@@ -335,6 +363,7 @@ void GameClient::processSnapshot(sf::Packet& pkt) {
     pkt >> pflag >> outc;
     serverPaused_ = (pflag != 0);
     matchOutcome_ = outc;
+    if (outc != 0) audio_.setFrightenedLoop(false);
 }
 
 void GameClient::processLevel(sf::Packet& pkt) {
@@ -356,13 +385,15 @@ void GameClient::processLevel(sf::Packet& pkt) {
             level_.setTile(x, y, t);
         }
     }
-    haveLevel_         = true;
-    readyTimer_        = kReadySeconds;
-    playerReadySent_   = false;
-    lastSent_          = Direction::None;
+    haveLevel_       = true;
+    readyTimer_      = kReadySeconds;
+    playerReadySent_ = false;
+    lastSent_        = Direction::None;
     input_.clearQueuedDirection();
     matchOutcome_ = 0;
     serverPaused_ = false;
+    audio_.stopAllMusic();
+    audio_.playLevelIntro();
 }
 
 void GameClient::updateAnimations(float dt) {

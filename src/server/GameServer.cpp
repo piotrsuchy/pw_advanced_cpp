@@ -65,8 +65,8 @@ void GameServer::acceptConnections() {
     }
 
     sock->setBlocking(false);
-    clients_[freeIdx]   = std::move(sock);
-    connected_[freeIdx] = true;
+    clients_[freeIdx]     = std::move(sock);
+    connected_[freeIdx]   = true;
     playerReady_[freeIdx] = false;
     selector_.add(*clients_[freeIdx]);
     std::cout << "[SERVER] Client connected in slot " << freeIdx << "\n";
@@ -135,7 +135,7 @@ void GameServer::tryStartRoundAfterReady() {
 }
 
 void GameServer::onClientDisconnected(int slot) {
-    connected_[slot]     = false;
+    connected_[slot]   = false;
     playerReady_[slot] = false;
     std::cout << "[SERVER] Client " << slot << " disconnected\n";
 
@@ -226,8 +226,8 @@ sf::Packet GameServer::buildSnapshotPacket(const std::vector<Simulation::Consume
     pkt << std::string("SNAPSHOT")
         // Player 0
         << (float)s0.position.x << (float)s0.position.y << (sf::Uint16)s0.score << (sf::Uint8)(s0.powered ? 1 : 0)
-        << (sf::Uint8)s0.livesLeft
-        << (float)s0.deathTimeLeft << (float)s0.powerTimeLeft
+        << (sf::Uint8)s0.livesLeft << (float)s0.deathTimeLeft
+        << (float)s0.powerTimeLeft
         // Player 1
         << (float)s1.position.x << (float)s1.position.y << (sf::Uint16)s1.score << (sf::Uint8)(s1.powered ? 1 : 0)
         << (sf::Uint8)s1.livesLeft << (float)s1.deathTimeLeft << (float)s1.powerTimeLeft;

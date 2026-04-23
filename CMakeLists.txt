@@ -33,9 +33,9 @@ endif()
 
 if(CLIENT_SOURCES)
   # Client requires graphics/window/system
-  find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
+  find_package(SFML 2.5 COMPONENTS graphics window system audio REQUIRED)
   add_executable(pacman_client ${CLIENT_SOURCES})
-  target_link_libraries(pacman_client pacman_shared sfml-graphics sfml-window sfml-network sfml-system)
+  target_link_libraries(pacman_client pacman_shared sfml-graphics sfml-window sfml-audio sfml-network sfml-system)
   # Reuse core/graphics modules needed for rendering and input
   target_sources(pacman_client PRIVATE
     src/core/InputManager.cpp
